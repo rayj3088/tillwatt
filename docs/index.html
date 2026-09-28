@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Tillwatt Scenes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #f6f4ee; --panel: #ffffff; --ink: #1c2420; --sub: #667069; --line: #e2ded2;
@@ -11,29 +14,42 @@
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --bg: #14201b; --panel: #1b2a23; --ink: #eef1ec; --sub: #9db0a5; --line: #2d3d34;
+      --bg: #121c17; --panel: #1a2822; --ink: #eef1ec; --sub: #93a69b; --line: #2b3a33;
       --solar: #f0b93a; --served: #57b791; --soc: #5fa9d6; --unmet: #e0806b; --accent: #5fa9d6;
     }
   }
   :root[data-theme="dark"] {
-    --bg: #14201b; --panel: #1b2a23; --ink: #eef1ec; --sub: #9db0a5; --line: #2d3d34;
+    --bg: #121c17; --panel: #1a2822; --ink: #eef1ec; --sub: #93a69b; --line: #2b3a33;
     --solar: #f0b93a; --served: #57b791; --soc: #5fa9d6; --unmet: #e0806b; --accent: #5fa9d6;
   }
 
   * { box-sizing: border-box; }
   body {
     margin: 0; background: var(--bg); color: var(--ink);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     padding: 16px;
   }
   .wrap { max-width: 860px; margin: 0 auto; }
+  h1, .cname, .name, .n { font-family: "Space Grotesk", "Inter", sans-serif; }
 
-  header { margin-bottom: 16px; }
-  h1 { font-size: 21px; margin: 0 0 4px; letter-spacing: -0.01em; }
+  header { margin-bottom: 14px; }
+  h1 { font-size: 22px; margin: 0 0 4px; letter-spacing: -0.01em; font-weight: 700; }
   .tagline { color: var(--sub); font-size: 13.5px; margin: 0; }
+
+  /* --- stepper --- */
+  .stepper { display: flex; gap: 6px; margin: 14px 0 18px; }
+  .step {
+    flex: 1; text-align: center; padding: 7px 4px; border-radius: 8px; font-size: 11.5px;
+    font-weight: 600; color: var(--sub); background: var(--panel); border: 1px solid var(--line);
+    cursor: default; transition: all .2s ease;
+  }
+  .step.done { cursor: pointer; color: var(--accent); border-color: var(--accent); }
+  .step.now { color: white; background: var(--accent); border-color: var(--accent); }
 
   .stage { display: none; }
   .stage.active { display: block; }
+  @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .stage.active .stage-inner { animation: fadeSlideIn .35s ease both; }
 
   /* --- stage 1: pick a place --- */
   .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
@@ -41,10 +57,12 @@
   .place-card {
     background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
     overflow: hidden; cursor: pointer; text-align: left; padding: 0; display: block; width: 100%;
+    transition: transform .15s ease, box-shadow .15s ease;
   }
+  .place-card:hover { transform: translateY(-3px); box-shadow: 0 10px 22px rgba(20,30,25,.12); }
   .place-card svg { width: 100%; height: auto; display: block; }
   .place-card .cap { padding: 10px 12px 12px; }
-  .place-card .name { font-weight: 700; font-size: 14px; }
+  .place-card .name { font-weight: 700; font-size: 14.5px; }
   .place-card .ratings { color: var(--sub); font-size: 11.5px; margin-top: 3px; }
 
   /* --- stage 2: crops narrow down --- */
@@ -52,45 +70,58 @@
     background: none; border: none; color: var(--accent); font-size: 13px;
     font-weight: 600; cursor: pointer; padding: 0; margin-bottom: 12px;
   }
-  .scene-hero { border-radius: 14px; overflow: hidden; border: 1px solid var(--line); margin-bottom: 14px; }
+  .scene-hero { border-radius: 14px; overflow: hidden; border: 1px solid var(--line); margin-bottom: 14px; position: relative; }
   .scene-hero svg { width: 100%; height: auto; display: block; }
   .scene-hero .cap { background: var(--panel); padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; }
-  .scene-hero .name { font-weight: 700; font-size: 15px; }
+  .scene-hero .name { font-weight: 700; font-size: 15.5px; }
   .scene-hero .ratings { color: var(--sub); font-size: 12px; }
 
   .hint { font-size: 12.5px; color: var(--sub); margin: -6px 0 10px; }
   .crop-list { display: flex; flex-direction: column; gap: 8px; }
   .crop-row {
     background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
-    padding: 10px 12px; display: flex; gap: 10px; align-items: flex-start;
+    padding: 10px 12px; display: flex; gap: 10px; align-items: flex-start; transition: border-color .15s ease;
   }
+  .crop-row:has(input:checked) { border-color: var(--served); }
   .crop-row.rejected { opacity: 0.4; }
-  .crop-row input[type=checkbox] { margin-top: 3px; width: 16px; height: 16px; flex: none; }
+  .crop-row input[type=checkbox] { margin-top: 3px; width: 16px; height: 16px; flex: none; accent-color: var(--served); }
   .crop-row .body { flex: 1; min-width: 0; }
   .crop-row .top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; gap: 8px; }
   .crop-row .cname { font-weight: 600; font-size: 13.5px; }
   .crop-row .pct { font-size: 12px; color: var(--sub); font-variant-numeric: tabular-nums; white-space: nowrap; }
   .fit-bar { height: 6px; border-radius: 4px; background: var(--line); overflow: hidden; }
-  .fit-fill { height: 100%; border-radius: 4px; }
+  .fit-fill { height: 100%; border-radius: 4px; transition: width .3s ease; }
   .crop-row .limit { font-size: 11px; color: var(--sub); margin-top: 5px; }
 
   .selection-bar {
     position: sticky; bottom: 12px; margin-top: 14px; background: var(--panel);
     border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px;
     display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    box-shadow: 0 8px 24px rgba(20,30,25,.10);
   }
   .selection-bar .txt { font-size: 12.5px; color: var(--sub); }
   .selection-bar .txt b { color: var(--ink); }
   .cta {
     padding: 11px 16px; border-radius: 9px; border: none; background: var(--accent);
     color: white; font-size: 13.5px; font-weight: 700; cursor: pointer; white-space: nowrap;
+    transition: transform .1s ease;
   }
+  .cta:active:not(:disabled) { transform: scale(0.97); }
   .cta:disabled { opacity: 0.4; cursor: not-allowed; }
 
   /* --- stage 3: buildable / ledger --- */
-  .draw-line { font-size: 13px; color: var(--sub); margin: -6px 0 12px; }
+  .mood-line { font-size: 14px; margin: 0 0 4px; font-weight: 600; }
+  .draw-line { font-size: 13px; color: var(--sub); margin: 0 0 12px; }
   .draw-line b { color: var(--ink); }
   .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+
+  .config-panel { margin-bottom: 12px; }
+  .config-panel .config-title { font-size: 12px; font-weight: 700; color: var(--sub); text-transform: uppercase; letter-spacing: .04em; margin: 0 0 10px; }
+  .config-row { display: grid; grid-template-columns: 70px 1fr 66px; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .config-row:last-child { margin-bottom: 0; }
+  .config-row label { font-size: 12.5px; font-weight: 600; }
+  .config-row input[type=range] { width: 100%; accent-color: var(--accent); }
+  .config-row .val { font-size: 12px; color: var(--sub); text-align: right; font-variant-numeric: tabular-nums; }
   .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: var(--sub); margin-bottom: 10px; }
   .legend span { display: inline-flex; align-items: center; gap: 6px; }
   .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
@@ -102,6 +133,16 @@
   .stat .n { font-size: 18px; font-weight: 700; }
   .stat .l { font-size: 11px; color: var(--sub); margin-top: 2px; }
 
+  /* scene-art animation */
+  .sun-disc { animation: sunPulse 4.5s ease-in-out infinite; transform-origin: center; }
+  @keyframes sunPulse { 0%, 100% { opacity: 0.9; } 50% { opacity: 1; } }
+  .wind-line { animation: windDrift 3.2s ease-in-out infinite; }
+  @keyframes windDrift { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(10px); } }
+  .cloud-g { animation: cloudDrift 26s ease-in-out infinite; }
+  @keyframes cloudDrift { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(16px); } }
+  .bot-blink { animation: botBlink 2.4s ease-in-out infinite; }
+  @keyframes botBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+
   footer { margin-top: 16px; font-size: 11px; color: var(--sub); text-align: center; }
 </style>
 </head>
@@ -112,35 +153,64 @@
     <p class="tagline" id="pageTag">Every place is a designed climate, not a real one. No coordinates, no map — just ratings.</p>
   </header>
 
+  <div class="stepper" id="stepper"></div>
+
   <div class="stage active" id="stage-pick">
-    <div class="grid" id="placeGrid"></div>
+    <div class="stage-inner">
+      <div class="grid" id="placeGrid"></div>
+    </div>
   </div>
 
   <div class="stage" id="stage-crops">
-    <button class="back-link" onclick="goToStage('pick')">&larr; choose a different place</button>
-    <div class="scene-hero" id="sceneHero"></div>
-    <p class="hint">Check the crops you're planting. Each one draws its own power to grow — pumps, dryers, climate control — and that draw becomes the load the farm's energy has to cover.</p>
-    <div class="crop-list" id="cropList"></div>
-    <div class="selection-bar">
-      <span class="txt" id="selectionTxt">Nothing selected yet</span>
-      <button class="cta" id="ctaBuild" disabled onclick="goToStage('build')">Start building &rarr;</button>
+    <div class="stage-inner">
+      <button class="back-link" onclick="goToStage('pick')">&larr; choose a different place</button>
+      <div class="scene-hero" id="sceneHero"></div>
+      <p class="hint">Check the crops you're planting. Each one draws its own power to grow — pumps, dryers, climate control — and that draw becomes the load the farm's energy has to cover.</p>
+      <div class="crop-list" id="cropList"></div>
+      <div class="selection-bar">
+        <span class="txt" id="selectionTxt">Nothing selected yet</span>
+        <button class="cta" id="ctaBuild" disabled onclick="startBuilding()">Start building &rarr;</button>
+      </div>
     </div>
   </div>
 
   <div class="stage" id="stage-build">
-    <button class="back-link" onclick="goToStage('crops')">&larr; back to crops</button>
-    <div class="scene-hero" id="sceneHeroBuild"></div>
-    <p class="draw-line" id="drawLine"></p>
-    <div class="panel">
-      <div class="legend">
-        <span><i class="dot" style="background:var(--solar)"></i>solar produced</span>
-        <span><i class="dot" style="background:var(--served)"></i>load served</span>
-        <span><i class="dot" style="background:var(--soc)"></i>battery charge</span>
-        <span><i class="dot" style="background:var(--unmet)"></i>unmet load</span>
+    <div class="stage-inner">
+      <button class="back-link" onclick="goToStage('crops')">&larr; back to crops</button>
+      <div class="scene-hero" id="sceneHeroBuild"></div>
+      <p class="mood-line" id="moodLine"></p>
+      <p class="draw-line" id="drawLine"></p>
+
+      <div class="panel config-panel">
+        <p class="config-title">Your equipment</p>
+        <div class="config-row">
+          <label>Solar</label>
+          <input type="range" id="cfgSolar" min="20" max="250" step="10" value="100" oninput="onConfigChange()">
+          <span class="val" id="valSolar">100 m²</span>
+        </div>
+        <div class="config-row">
+          <label>Battery</label>
+          <input type="range" id="cfgBattery" min="10" max="150" step="5" value="60" oninput="onConfigChange()">
+          <span class="val" id="valBattery">60 kWh</span>
+        </div>
+        <div class="config-row">
+          <label>Robots</label>
+          <input type="range" id="cfgRobots" min="1" max="6" step="1" value="1" oninput="onConfigChange()">
+          <span class="val" id="valRobots">1</span>
+        </div>
       </div>
-      <svg id="chart" viewBox="0 0 860 300" preserveAspectRatio="xMidYMid meet"></svg>
+
+      <div class="panel">
+        <div class="legend">
+          <span><i class="dot" style="background:var(--solar)"></i>solar produced</span>
+          <span><i class="dot" style="background:var(--served)"></i>load served</span>
+          <span><i class="dot" style="background:var(--soc)"></i>battery charge</span>
+          <span><i class="dot" style="background:var(--unmet)"></i>unmet load</span>
+        </div>
+        <svg id="chart" viewBox="0 0 860 300" preserveAspectRatio="xMidYMid meet"></svg>
+      </div>
+      <div class="stats" id="stats"></div>
     </div>
-    <div class="stats" id="stats"></div>
   </div>
 
   <footer>field · plateau · floodplain · island — designed climates, no real-world coordinates</footer>
@@ -153,6 +223,9 @@
 // actual re-run of the ledger against whatever you pick — not a
 // canned illustration. The Python engine + its pytest suite remain
 // the authority; this is the same math, ported to run in the browser.
+// The robots/panels/battery drawn on the built scene are a first
+// visual stand-in for the part-card system (solar, wind, battery,
+// robot — each its own ledger row) that's still to be built for real.
 // ============================================================
 
 const SCENES = {
@@ -162,9 +235,6 @@ const SCENES = {
   island:     { label: "Coastal Island",    sun: 8, wind: 8, storm: 4, temp: [15, 32] },
 };
 
-// sun_min / wind_max / storm_tol / temp band decide fit.
-// load_kw is what actually growing & processing this crop draws from the farm's power bus —
-// this is what ties your crop picks to the ledger simulation.
 const CROPS = [
   { key: "wheat",   name: "Wheat",           sun_min: 6, wind_max: 6, storm_tol: 0.5, temp: [-5, 28], load_kw: 2.4 },
   { key: "potato",  name: "Potatoes",        sun_min: 4, wind_max: 8, storm_tol: 0.7, temp: [-10, 24], load_kw: 3.1 },
@@ -174,17 +244,20 @@ const CROPS = [
   { key: "kelp",    name: "Kelp (wet-site)", sun_min: 5, wind_max: 9, storm_tol: 0.9, temp: [5, 30], load_kw: 3.6 },
 ];
 
-const BASE_FARM_LOAD_KW = 1.2; // sensors, control systems, robots idling — draws even with nothing planted
+// SOLAR and BATTERY_SPEC are mutated live from the equipment sliders below —
+// area_m2 / capacity_kwh (and the derived charge/discharge rate) change per your setup.
 const SOLAR = { area_m2: 100.0, efficiency: 0.20, temp_coeff_per_c: 0.004, noct_slope: 0.03125 };
-const BATTERY_SPEC = { capacity_kwh: 60.0, round_trip_eff: 0.90, max_charge_kw: 20.0, max_discharge_kw: 20.0, start_soc_kwh: 30.0 };
+const BATTERY_SPEC = { capacity_kwh: 60.0, round_trip_eff: 0.90, max_charge_kw: 20.0, max_discharge_kw: 20.0 };
 const SIM_DAYS = 10;
 const SEED = 1;
+const CONFIG = { solarM2: 100, batteryKwh: 60, robots: 1 };
 
 let currentKey = null;
 let selected = new Set();
 let stage = "pick";
+let visited = new Set(["pick"]);
 
-// ---------- seeded RNG (deterministic, browser-side mirror of the Python engine's seeding) ----------
+// ---------- seeded RNG ----------
 function makeRng(seed) {
   let s = seed >>> 0 || 1;
   return function () {
@@ -235,7 +308,8 @@ function solarOutputKwh(irradianceWm2, ambientC) {
 
 // ---------- mirrors engine/parts.py Battery.charge / discharge ----------
 function makeBattery() {
-  return { soc_kwh: BATTERY_SPEC.start_soc_kwh, eta: Math.sqrt(BATTERY_SPEC.round_trip_eff) };
+  // starts half-charged, whatever size you built
+  return { soc_kwh: BATTERY_SPEC.capacity_kwh * 0.5, eta: Math.sqrt(BATTERY_SPEC.round_trip_eff) };
 }
 function batteryCharge(b, offeredKwh) {
   const headroom = BATTERY_SPEC.capacity_kwh - b.soc_kwh;
@@ -273,8 +347,9 @@ function simulateScene(sceneKey, loadKw) {
   return rows;
 }
 
-// ---------- simple flat-vector scene art ----------
-function sceneArt(key, W, H) {
+// ---------- flat-vector scene art ----------
+function sceneArt(key, W, H, opts) {
+  opts = opts || {};
   const s = SCENES[key];
   const skyBottom = { field: "#cfe6ef", plateau: "#dbeaf2", floodplain: "#cdd9d6", island: "#bfe9ea" }[key];
   const skyTop =    { field: "#8fc7de", plateau: "#a9cfe0", floodplain: "#9db3ad", island: "#6fc7d4" }[key];
@@ -299,25 +374,36 @@ function sceneArt(key, W, H) {
   }
 
   const sunR = 8 + s.sun * 2.2;
-  const sun = `<circle cx="${W*0.78}" cy="${H*0.24}" r="${sunR}" fill="#f2b705" opacity="0.92"/>`;
+  const sun = `<circle class="sun-disc" cx="${W*0.78}" cy="${H*0.24}" r="${sunR}" fill="#f2b705"/>`;
 
   let wind = "";
   const windCount = Math.round(s.wind / 2);
   for (let i = 0; i < windCount; i++) {
     const y = H * (0.12 + i * 0.09);
     const x0 = W * 0.06 + (i % 2) * 10;
-    wind += `<path d="M${x0},${y} q18,-6 34,0 t30,0" stroke="#ffffff" stroke-width="2" fill="none" opacity="0.5" stroke-linecap="round"/>`;
+    wind += `<path class="wind-line" style="animation-delay:${i*0.3}s" d="M${x0},${y} q18,-6 34,0 t30,0" stroke="#ffffff" stroke-width="2" fill="none" opacity="0.5" stroke-linecap="round"/>`;
   }
 
   let clouds = "";
   const cloudCount = Math.round(s.storm / 2.5);
   for (let i = 0; i < cloudCount; i++) {
     const cx = W * (0.15 + i * 0.22), cy = H * (0.16 + (i % 2) * 0.08);
-    clouds += `<g opacity="${0.35 + s.storm * 0.04}">
+    clouds += `<g class="cloud-g" style="animation-delay:${i*1.5}s" opacity="${0.35 + s.storm * 0.04}">
       <ellipse cx="${cx}" cy="${cy}" rx="20" ry="9" fill="#eef2f0"/>
       <ellipse cx="${cx+14}" cy="${cy-4}" rx="15" ry="8" fill="#eef2f0"/>
       <ellipse cx="${cx-12}" cy="${cy+2}" rx="13" ry="7" fill="#eef2f0"/>
     </g>`;
+  }
+
+  let equipment = "";
+  if (opts.equipment) {
+    const groundY = H * 0.66;
+    equipment += solarIcon(W * 0.20, groundY, 0.95);
+    equipment += batteryIcon(W * 0.36, groundY, 0.85);
+    const botCount = Math.max(1, Math.min(4, opts.botCount || 1));
+    for (let i = 0; i < botCount; i++) {
+      equipment += robotIcon(W * (0.54 + i * 0.11), groundY + (i % 2 === 0 ? 0 : 4), 0.8);
+    }
   }
 
   return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
@@ -325,8 +411,43 @@ function sceneArt(key, W, H) {
       <stop offset="0%" stop-color="${skyTop}"/><stop offset="100%" stop-color="${skyBottom}"/>
     </linearGradient></defs>
     <rect width="${W}" height="${H}" fill="url(#sky-${key})"/>
-    ${sun}${wind}${ground}${clouds}
+    ${sun}${wind}${ground}${clouds}${equipment}
   </svg>`;
+}
+
+// ---------- equipment icons: solar array, battery pack, robot ----------
+function solarIcon(x, y, scale) {
+  return `<g transform="translate(${x},${y}) scale(${scale})">
+    <ellipse cx="0" cy="24" rx="28" ry="4" fill="#000" opacity="0.12"/>
+    <g transform="skewX(-8)">
+      <rect x="-26" y="-6" width="52" height="26" rx="3" fill="#1f3b52"/>
+      <line x1="-17" y1="-6" x2="-17" y2="20" stroke="#3a5f7d" stroke-width="1.4"/>
+      <line x1="-4" y1="-6" x2="-4" y2="20" stroke="#3a5f7d" stroke-width="1.4"/>
+      <line x1="9" y1="-6" x2="9" y2="20" stroke="#3a5f7d" stroke-width="1.4"/>
+      <line x1="22" y1="-6" x2="22" y2="20" stroke="#3a5f7d" stroke-width="1.4"/>
+    </g>
+    <rect x="-2" y="18" width="4" height="10" fill="#5c5648"/>
+  </g>`;
+}
+function batteryIcon(x, y, scale) {
+  return `<g transform="translate(${x},${y}) scale(${scale})">
+    <ellipse cx="0" cy="21" rx="17" ry="3.5" fill="#000" opacity="0.12"/>
+    <rect x="-4" y="-16" width="8" height="6" rx="2" fill="#254f68"/>
+    <rect x="-15" y="-10" width="30" height="30" rx="5" fill="#2b6f8f"/>
+    <path d="M2,-3 L-5,6 L-1,6 L-3,13 L7,2 L1,2 Z" fill="#f2b705"/>
+  </g>`;
+}
+function robotIcon(x, y, scale) {
+  return `<g transform="translate(${x},${y}) scale(${scale})">
+    <ellipse cx="0" cy="28" rx="15" ry="3.5" fill="#000" opacity="0.14"/>
+    <rect x="-11" y="2" width="22" height="19" rx="6" fill="#3c4a44"/>
+    <circle cx="0" cy="-8" r="9" fill="#4a5a53"/>
+    <circle class="bot-blink" cx="0" cy="-8" r="4" fill="#8fe3d6"/>
+    <rect x="-1.5" y="-18" width="3" height="7" fill="#4a5a53"/>
+    <circle class="bot-blink" cx="0" cy="-19" r="2.3" fill="#e8a318" style="animation-delay:0.6s"/>
+    <circle cx="-8" cy="23" r="3.6" fill="#2c3733"/>
+    <circle cx="8" cy="23" r="3.6" fill="#2c3733"/>
+  </g>`;
 }
 
 // ---------- stage 1: place picker ----------
@@ -347,7 +468,7 @@ function buildPlaceGrid() {
   });
 }
 
-// ---------- fit scoring (Liebig: the scarcest factor sets the score) ----------
+// ---------- fit scoring ----------
 function fitScore(scene, crop) {
   const sunFit = scene.sun >= crop.sun_min ? 1 : scene.sun / crop.sun_min;
   const windFit = scene.wind <= crop.wind_max ? 1 : crop.wind_max / scene.wind;
@@ -406,8 +527,10 @@ function toggleCrop(key) {
   updateSelectionBar();
 }
 
-function totalLoadKw() {
-  let sum = BASE_FARM_LOAD_KW;
+// base facility draw (sensors, controllers) + 0.3 kW idle per robot + each crop's own equipment
+function totalLoadKw(robots) {
+  robots = robots || 1;
+  let sum = 0.6 + robots * 0.3;
   selected.forEach(key => { sum += CROPS.find(c => c.key === key).load_kw; });
   return sum;
 }
@@ -420,26 +543,72 @@ function updateSelectionBar() {
     cta.disabled = true;
   } else {
     const names = [...selected].map(k => CROPS.find(c => c.key === k).name).join(" + ");
-    txt.innerHTML = `<b>${names}</b> — ${totalLoadKw().toFixed(1)} kW total draw`;
+    const previewRobots = Math.max(1, Math.min(6, selected.size));
+    txt.innerHTML = `<b>${names}</b> — ~${totalLoadKw(previewRobots).toFixed(1)} kW to run (you'll size the equipment next)`;
     cta.disabled = false;
   }
 }
 
+// called once when you leave crops for build — sets a sensible robot-count default,
+// which you can then override with the slider
+function startBuilding() {
+  CONFIG.robots = Math.max(1, Math.min(6, selected.size));
+  goToStage("build");
+}
+
+function onConfigChange() {
+  CONFIG.solarM2 = Number(document.getElementById("cfgSolar").value);
+  CONFIG.batteryKwh = Number(document.getElementById("cfgBattery").value);
+  CONFIG.robots = Number(document.getElementById("cfgRobots").value);
+  document.getElementById("valSolar").textContent = CONFIG.solarM2 + " m²";
+  document.getElementById("valBattery").textContent = CONFIG.batteryKwh + " kWh";
+  document.getElementById("valRobots").textContent = CONFIG.robots;
+  refreshLedger();
+}
+
 // ---------- stage 3: buildable / ledger ----------
+function moodFor(darkHours, minSoc) {
+  const socFloorPct = minSoc / BATTERY_SPEC.capacity_kwh;
+  if (darkHours === 0 && socFloorPct > 0.3) return { text: "Thriving.", sub: "The panels keep pace and the battery never gets nervous." };
+  if (darkHours === 0) return { text: "Holding on.", sub: "Everything gets served, but the battery runs close to empty some nights." };
+  if (darkHours < 15) return { text: "Straining.", sub: "A few hours a day go dark. The robots pause and wait for sun." };
+  return { text: "Failing here.", sub: "This setup can't keep up in this place. Fewer crops, more panels, or a calmer place." };
+}
+
 function buildLedgerView() {
+  // sync the sliders' displayed values to CONFIG (startBuilding may have just set a robot default)
+  document.getElementById("cfgSolar").value = CONFIG.solarM2;
+  document.getElementById("cfgBattery").value = CONFIG.batteryKwh;
+  document.getElementById("cfgRobots").value = CONFIG.robots;
+  document.getElementById("valSolar").textContent = CONFIG.solarM2 + " m²";
+  document.getElementById("valBattery").textContent = CONFIG.batteryKwh + " kWh";
+  document.getElementById("valRobots").textContent = CONFIG.robots;
+  refreshLedger();
+}
+
+function refreshLedger() {
   const scene = SCENES[currentKey];
-  const loadKw = totalLoadKw();
+  SOLAR.area_m2 = CONFIG.solarM2;
+  BATTERY_SPEC.capacity_kwh = CONFIG.batteryKwh;
+  BATTERY_SPEC.max_charge_kw = CONFIG.batteryKwh * 0.33;
+  BATTERY_SPEC.max_discharge_kw = CONFIG.batteryKwh * 0.33;
+  const loadKw = totalLoadKw(CONFIG.robots);
   const names = [...selected].map(k => CROPS.find(c => c.key === k).name).join(", ");
 
-  document.getElementById("sceneHeroBuild").innerHTML = `${sceneArt(currentKey, 860, 160)}
+  document.getElementById("sceneHeroBuild").innerHTML = `${sceneArt(currentKey, 860, 190, { equipment: true, botCount: CONFIG.robots })}
     <div class="cap">
       <div class="name">${scene.label} — running</div>
       <div class="ratings">${SIM_DAYS} sim-days, ledger checked every hour</div>
     </div>`;
-  document.getElementById("drawLine").innerHTML =
-    `Growing <b>${names}</b> draws <b>${loadKw.toFixed(1)} kW</b> around the clock (base farm systems + crop equipment). That's the load line below — everything else has to cover it without crossing the fence.`;
 
   const rows = simulateScene(currentKey, loadKw);
+  const darkHours = rows.filter(r => r.unmet > 1e-6).length;
+  const minSoc = Math.min(...rows.map(r => r.soc));
+  const mood = moodFor(darkHours, minSoc);
+  document.getElementById("moodLine").textContent = mood.text;
+  document.getElementById("drawLine").innerHTML =
+    `${mood.sub} Growing <b>${names}</b> with ${CONFIG.robots} robot${CONFIG.robots > 1 ? "s" : ""}, ${CONFIG.solarM2} m² of panels and a ${CONFIG.batteryKwh} kWh battery draws <b>${loadKw.toFixed(1)} kW</b> around the clock — that's the load line below. Drag the sliders to fix it.`;
+
   drawChart(rows);
   drawStats(rows, loadKw);
 }
@@ -493,9 +662,23 @@ function drawChart(rows) {
   `;
 }
 
+// ---------- stepper ----------
+function buildStepper() {
+  const steps = [["pick", "1 · Place"], ["crops", "2 · Crops"], ["build", "3 · Build"]];
+  const el = document.getElementById("stepper");
+  el.innerHTML = steps.map(([key, label]) => {
+    let cls = "step";
+    if (key === stage) cls += " now";
+    else if (visited.has(key)) cls += " done";
+    const clickable = visited.has(key) && key !== stage;
+    return `<div class="${cls}" ${clickable ? `onclick="goToStage('${key}')"` : ""}>${label}</div>`;
+  }).join("");
+}
+
 // ---------- stage router ----------
 function goToStage(next) {
   stage = next;
+  visited.add(next);
   document.querySelectorAll(".stage").forEach(el => el.classList.remove("active"));
   document.getElementById("stage-" + next).classList.add("active");
   const titles = {
@@ -505,11 +688,13 @@ function goToStage(next) {
   };
   document.getElementById("pageTitle").textContent = titles[next][0];
   document.getElementById("pageTag").textContent = titles[next][1];
+  buildStepper();
   if (next === "crops") buildCropList();
   if (next === "build") buildLedgerView();
 }
 
 buildPlaceGrid();
+buildStepper();
 </script>
 </body>
 </html>
