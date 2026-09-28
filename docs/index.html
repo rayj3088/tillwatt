@@ -123,6 +123,75 @@
   .config-row input[type=range] { width: 100%; accent-color: var(--accent); }
   .config-row .val { font-size: 12px; color: var(--sub); text-align: right; font-variant-numeric: tabular-nums; }
 
+  .tier-label { font-size: 11.5px; font-weight: 700; color: var(--sub); margin: 10px 0 6px; }
+  .config-panel .tier-label:first-of-type { margin-top: 0; }
+  .tier-group { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+  .tier-btn {
+    flex: 1 1 auto; min-width: 88px; padding: 8px 8px; border-radius: 8px; border: 1px solid var(--line);
+    background: var(--bg); color: var(--ink); font-size: 11.5px; font-weight: 600; cursor: pointer;
+    text-align: center; line-height: 1.35; transition: all .15s ease;
+  }
+  .tier-btn .sub { display: block; font-weight: 400; color: var(--sub); font-size: 10px; margin-top: 2px; }
+  .tier-btn.active { border-color: var(--accent); background: var(--accent); color: white; }
+  .tier-btn.active .sub { color: rgba(255,255,255,.8); }
+
+  .win-banner {
+    display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    padding: 12px 14px; border-radius: 12px; margin-bottom: 12px; border: 1px solid var(--line);
+    background: var(--panel); transition: background .3s ease, border-color .3s ease;
+  }
+  .win-banner.win { background: var(--served); border-color: var(--served); }
+  .win-banner.win .win-label, .win-banner.win .win-value, .win-banner.win .win-target { color: white; }
+  .win-left { display: flex; flex-direction: column; }
+  .win-label { font-size: 11px; color: var(--sub); font-weight: 600; text-transform: uppercase; letter-spacing: .03em; }
+  .win-value { font-size: 20px; font-weight: 700; font-family: "Space Grotesk", sans-serif; }
+  .win-target { font-size: 12px; color: var(--sub); font-weight: 600; white-space: nowrap; }
+  .win-explain { font-size: 12px; color: var(--sub); line-height: 1.5; margin: 0 0 14px; }
+
+  .rank-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+  .rank-chip {
+    display: inline-flex; align-items: center; padding: 5px 12px; border-radius: 999px;
+    background: var(--bg); border: 1px solid var(--line);
+  }
+  .rank-chip.won { background: var(--served); border-color: var(--served); }
+  .rank-chip.won .rank-title { color: white; }
+  .rank-title { font-size: 12px; font-weight: 700; font-family: "Space Grotesk", sans-serif; letter-spacing: .02em; }
+  .submit-btn {
+    padding: 8px 13px; border-radius: 8px; border: none; background: var(--accent);
+    color: white; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap;
+  }
+  .submit-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .badge-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px; border-radius: 7px;
+    font-size: 10.5px; font-weight: 600; background: var(--bg); border: 1px solid var(--line);
+    color: var(--sub); opacity: 0.4; transition: all .2s ease;
+  }
+  .badge.earned { opacity: 1; color: var(--ink); border-color: var(--accent); }
+  .badge .dot2 { width: 6px; height: 6px; border-radius: 50%; background: var(--line); flex: none; }
+  .badge.earned .dot2 { background: var(--served); }
+
+  .almanac-row {
+    display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line);
+  }
+  .almanac-row:last-child { border-bottom: none; }
+  .almanac-rank { font-size: 13px; font-weight: 700; color: var(--sub); width: 22px; flex: none; text-align: center; font-variant-numeric: tabular-nums; }
+  .almanac-body { flex: 1; min-width: 0; }
+  .almanac-name { font-size: 13px; font-weight: 700; }
+  .almanac-detail { font-size: 11px; color: var(--sub); margin-top: 1px; }
+  .almanac-payback { font-size: 15px; font-weight: 700; font-family: "Space Grotesk", sans-serif; text-align: right; flex: none; color: var(--served); }
+
+  .build-tabs { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+  .build-tab {
+    flex: 1 1 40%; text-align: center; padding: 9px 6px; border-radius: 9px; font-size: 12px;
+    font-weight: 700; color: var(--sub); background: var(--panel); border: 1px solid var(--line);
+    cursor: pointer; transition: all .15s ease;
+  }
+  .build-tab.active { color: white; background: var(--accent); border-color: var(--accent); }
+  .build-tab-panel { display: none; }
+  .build-tab-panel.active { display: block; }
+
+  #moneyPanel { margin-bottom: 12px; }
   .money-panel .config-title { display: flex; justify-content: space-between; align-items: baseline; }
   .money-panel .claimed-tag { text-transform: none; letter-spacing: 0; font-weight: 500; color: var(--sub); font-size: 10.5px; }
   .money-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 16px; margin-bottom: 12px; }
@@ -192,27 +261,25 @@
       <p class="mood-line" id="moodLine"></p>
       <p class="draw-line" id="drawLine"></p>
 
-      <div class="panel config-panel">
-        <p class="config-title">Your equipment</p>
-        <div class="config-row">
-          <label>Solar</label>
-          <input type="range" id="cfgSolar" min="20" max="250" step="10" value="100" oninput="onConfigChange()">
-          <span class="val" id="valSolar">100 m²</span>
+      <div class="win-banner" id="winBanner">
+        <div class="win-left">
+          <span class="win-label" id="winLabel">Break-even</span>
+          <span class="win-value" id="winValue">—</span>
         </div>
-        <div class="config-row">
-          <label>Battery</label>
-          <input type="range" id="cfgBattery" min="10" max="150" step="5" value="60" oninput="onConfigChange()">
-          <span class="val" id="valBattery">60 kWh</span>
-        </div>
-        <div class="config-row">
-          <label>Robots</label>
-          <input type="range" id="cfgRobots" min="1" max="6" step="1" value="1" oninput="onConfigChange()">
-          <span class="val" id="valRobots">1</span>
-        </div>
+        <div class="win-target">target: ≤1 year, &lt;15 dark hrs</div>
       </div>
+      <p class="win-explain">This is the number that decides if you've won. Everything below is how you move it — switch tabs to adjust what you're building, see what it costs, or check how it holds up.</p>
 
-      <div class="panel money-panel">
-        <p class="config-title">Money <span class="claimed-tag">claimed estimates — not sourced yet</span></p>
+      <div class="rank-row">
+        <div class="rank-chip" id="rankChip">
+          <span class="rank-title" id="rankTitle">Homesteader</span>
+        </div>
+        <button class="submit-btn" id="submitBtn" disabled onclick="submitRun()">Submit to the Almanac &rarr;</button>
+      </div>
+      <div class="badge-row" id="badgeRow"></div>
+
+      <div class="panel money-panel" id="moneyPanel">
+        <p class="config-title">Cost to build <span class="claimed-tag">claimed estimates — not sourced yet</span></p>
         <div class="money-grid">
           <div class="money-item"><span class="ml">Solar</span><span class="mv" id="capSolar">$0</span></div>
           <div class="money-item"><span class="ml">Battery</span><span class="mv" id="capBattery">$0</span></div>
@@ -222,16 +289,74 @@
         <p class="payback-line" id="paybackText"></p>
       </div>
 
-      <div class="panel">
-        <div class="legend">
-          <span><i class="dot" style="background:var(--solar)"></i>solar produced</span>
-          <span><i class="dot" style="background:var(--served)"></i>load served</span>
-          <span><i class="dot" style="background:var(--soc)"></i>battery charge</span>
-          <span><i class="dot" style="background:var(--unmet)"></i>unmet load</span>
+      <div class="build-tabs" id="buildTabs"></div>
+
+      <div class="build-tab-panel active" id="tabEquipment">
+        <p class="hint" style="margin-top:0;">Add equipment and watch it appear on the farm above — that's the actual build, not a preview of it.</p>
+        <div class="panel config-panel">
+          <p class="config-title">Solar</p>
+          <div class="tier-group" id="tierSolar"></div>
+          <div class="config-row">
+            <label>Size</label>
+            <input type="range" id="cfgSolar" min="20" max="250" step="10" value="100" oninput="onConfigChange()">
+            <span class="val" id="valSolar">100 m²</span>
+          </div>
         </div>
-        <svg id="chart" viewBox="0 0 860 300" preserveAspectRatio="xMidYMid meet"></svg>
+        <div class="panel config-panel">
+          <p class="config-title">Battery</p>
+          <div class="tier-group" id="tierBattery"></div>
+          <div class="config-row">
+            <label>Size</label>
+            <input type="range" id="cfgBattery" min="10" max="150" step="5" value="60" oninput="onConfigChange()">
+            <span class="val" id="valBattery">60 kWh</span>
+          </div>
+        </div>
+        <div class="panel config-panel">
+          <p class="config-title">Robots</p>
+          <div class="tier-group" id="tierRobot"></div>
+          <div class="config-row">
+            <label>Count</label>
+            <input type="range" id="cfgRobots" min="1" max="6" step="1" value="1" oninput="onConfigChange()">
+            <span class="val" id="valRobots">1</span>
+          </div>
+        </div>
+
+        <div class="panel config-panel" id="fertilizerPanel" style="display:none;">
+          <p class="config-title">Fertilizer <span class="claimed-tag">the scene doesn't give your crops enough on its own</span></p>
+          <div class="tier-group" id="tierFertilizer"></div>
+          <p class="hint" id="fertilizerHint" style="margin-top:8px;"></p>
+        </div>
       </div>
-      <div class="stats" id="stats"></div>
+
+      <div class="build-tab-panel" id="tabPerformance">
+        <div class="panel">
+          <p class="config-title">Hour by hour <span class="claimed-tag">10 simulated days</span></p>
+          <div class="legend">
+            <span><i class="dot" style="background:var(--solar)"></i>solar produced</span>
+            <span><i class="dot" style="background:var(--served)"></i>load served</span>
+            <span><i class="dot" style="background:var(--soc)"></i>battery charge</span>
+            <span><i class="dot" style="background:var(--unmet)"></i>unmet load</span>
+          </div>
+          <svg id="chart" viewBox="0 0 860 300" preserveAspectRatio="xMidYMid meet"></svg>
+        </div>
+        <div class="stats" id="stats"></div>
+        <div class="panel money-panel">
+          <p class="config-title">Reliability <span class="claimed-tag">Monte Carlo, 15 weather draws × 1 year</span></p>
+          <div class="money-grid">
+            <div class="money-item"><span class="ml">Battery wears out early</span><span class="mv" id="ruinPct">—</span></div>
+            <div class="money-item"><span class="ml">Typical failure</span><span class="mv" id="ruinWhen">—</span></div>
+          </div>
+          <p class="payback-line" id="ruinText"></p>
+        </div>
+      </div>
+
+      <div class="build-tab-panel" id="tabAlmanac">
+        <div class="panel">
+          <p class="config-title">The Almanac <span class="claimed-tag">every builder's best qualifying run, shared</span></p>
+          <p class="hint" style="margin-top:0;" id="almanacHint">Loading...</p>
+          <div id="almanacList"></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -250,33 +375,103 @@
 // robot — each its own ledger row) that's still to be built for real.
 // ============================================================
 
+// fertility: how much the soil/water here gives crops for free, 1-10, same rating
+// convention as sun/wind/storm — no coordinates, just a designed number.
 const SCENES = {
-  field:      { label: "Open Field",       sun: 7, wind: 4, storm: 3, temp: [-5, 30] },
-  plateau:    { label: "Mountain Plateau",  sun: 8, wind: 7, storm: 5, temp: [-15, 22] },
-  floodplain: { label: "River Floodplain",  sun: 6, wind: 3, storm: 6, temp: [2, 34] },
-  island:     { label: "Coastal Island",    sun: 8, wind: 8, storm: 4, temp: [15, 32] },
+  field:      { label: "Open Field",       sun: 7, wind: 4, storm: 3, temp: [-5, 30], fertility: 6 },
+  plateau:    { label: "Mountain Plateau",  sun: 8, wind: 7, storm: 5, temp: [-15, 22], fertility: 3 },
+  floodplain: { label: "River Floodplain",  sun: 6, wind: 3, storm: 6, temp: [2, 34], fertility: 9 },
+  island:     { label: "Coastal Island",    sun: 8, wind: 8, storm: 4, temp: [15, 32], fertility: 5 },
 };
 
+// fert_min joins sun_min/wind_max/storm_tol/temp as a fifth Liebig factor —
+// a crop that needs more fertility than the scene gives for free needs fertilizer.
 const CROPS = [
-  { key: "wheat",   name: "Wheat",           sun_min: 6, wind_max: 6, storm_tol: 0.5, temp: [-5, 28], load_kw: 2.4 },
-  { key: "potato",  name: "Potatoes",        sun_min: 4, wind_max: 8, storm_tol: 0.7, temp: [-10, 24], load_kw: 3.1 },
-  { key: "greens",  name: "Leafy Greens",    sun_min: 3, wind_max: 5, storm_tol: 0.4, temp: [0, 26], load_kw: 4.0 },
-  { key: "hemp",    name: "Hemp",            sun_min: 7, wind_max: 9, storm_tol: 0.8, temp: [0, 32], load_kw: 2.8 },
-  { key: "sorghum", name: "Sorghum",         sun_min: 8, wind_max: 7, storm_tol: 0.6, temp: [10, 34], load_kw: 2.0 },
-  { key: "kelp",    name: "Kelp (wet-site)", sun_min: 5, wind_max: 9, storm_tol: 0.9, temp: [5, 30], load_kw: 3.6 },
+  { key: "wheat",   name: "Wheat",           sun_min: 6, wind_max: 6, storm_tol: 0.5, temp: [-5, 28], fert_min: 5, load_kw: 2.4 },
+  { key: "potato",  name: "Potatoes",        sun_min: 4, wind_max: 8, storm_tol: 0.7, temp: [-10, 24], fert_min: 4, load_kw: 3.1 },
+  { key: "greens",  name: "Leafy Greens",    sun_min: 3, wind_max: 5, storm_tol: 0.4, temp: [0, 26], fert_min: 3, load_kw: 4.0 },
+  { key: "hemp",    name: "Hemp",            sun_min: 7, wind_max: 9, storm_tol: 0.8, temp: [0, 32], fert_min: 4, load_kw: 2.8 },
+  { key: "sorghum", name: "Sorghum",         sun_min: 8, wind_max: 7, storm_tol: 0.6, temp: [10, 34], fert_min: 6, load_kw: 2.0 },
+  { key: "kelp",    name: "Kelp (wet-site)", sun_min: 5, wind_max: 9, storm_tol: 0.9, temp: [5, 30], fert_min: 2, load_kw: 3.6 },
 ];
 
-// SOLAR and BATTERY_SPEC are mutated live from the equipment sliders below —
-// area_m2 / capacity_kwh (and the derived charge/discharge rate) change per your setup.
+// Tech tiers — the "come up with better technology" lever, separate from raw
+// quantity. All claimed placeholders, same tier as everything else here.
+const SOLAR_TIERS = [
+  { key: "budget",   name: "Budget thin-film",  efficiency: 0.14, cost_per_m2: 90 },
+  { key: "standard", name: "Standard",          efficiency: 0.20, cost_per_m2: 220 },
+  { key: "high",     name: "High-efficiency",   efficiency: 0.28, cost_per_m2: 340 },
+];
+const BATTERY_TIERS = [
+  { key: "lead", name: "Lead-acid",   cycle_life: 500,  calendar_life_years: 5,  cost_per_kwh: 90 },
+  { key: "nmc",  name: "Lithium NMC", cycle_life: 3000, calendar_life_years: 10, cost_per_kwh: 400 },
+  { key: "lfp",  name: "LFP",         cycle_life: 6000, calendar_life_years: 15, cost_per_kwh: 480 },
+];
+const ROBOT_TIERS = [
+  { key: "basic", name: "Basic tiller-bot", load_kw_each: 0.3, cost_each: 2500 },
+  { key: "multi", name: "Multi-task bot",   load_kw_each: 0.5, cost_each: 18000 },
+];
+
+// SOLAR and BATTERY_SPEC are mutated live from the equipment panel below —
+// area_m2 / efficiency / capacity_kwh (and the derived charge/discharge rate)
+// change per your tier + size choices.
 const SOLAR = { area_m2: 100.0, efficiency: 0.20, temp_coeff_per_c: 0.004, noct_slope: 0.03125 };
 const BATTERY_SPEC = { capacity_kwh: 60.0, round_trip_eff: 0.90, max_charge_kw: 20.0, max_discharge_kw: 20.0 };
 const SIM_DAYS = 10;
 const SEED = 1;
-const CONFIG = { solarM2: 100, batteryKwh: 60, robots: 1 };
+const CONFIG = {
+  solarM2: 100, batteryKwh: 60, robots: 1,
+  solarTier: "standard", batteryTier: "nmc", robotTier: "basic",
+  fertilizerChoice: "import",
+};
 
-// Claimed unit-cost placeholders — order-of-magnitude only, need a SOURCES.csv row
-// before they count as more than "claimed" (same convention as engine/parts.py).
-const COSTS = { solar_per_m2: 220, battery_per_kwh: 400, robot_each: 8000, grid_rate_per_kwh: 0.15 };
+// Claimed placeholders — order-of-magnitude only, need a SOURCES.csv row before
+// they count as more than "claimed" (same convention as engine/parts.py).
+// off_grid_displacement_per_kwh is priced against diesel/propane generation, not
+// grid power — this farm was never getting a grid connection, so the honest
+// counterfactual for "what does this energy save you" is the generator you'd
+// otherwise be running and fueling, which runs well above typical grid rates.
+const COSTS = {
+  off_grid_displacement_per_kwh: 0.75,
+  fert_import_per_crop_per_year: 150,
+  fert_onfarm_capex: 6000,
+  fert_onfarm_load_kw: 0.8,
+};
+
+// Mirrors engine/wear.py's rate models — see that file for why these are the shape they are.
+const HOURS_PER_YEAR = 8760.0;
+function batteryCalendarRate(calendarLifeYears) {
+  return 1.0 / (calendarLifeYears * HOURS_PER_YEAR);
+}
+function batteryDutyRate(bInKwh, bOutKwh, capacityKwh, cycleLife) {
+  const equivalentFullCycles = (bInKwh + bOutKwh) / (2.0 * capacityKwh);
+  return equivalentFullCycles / cycleLife;
+}
+
+// Mirrors engine/ruin.py's chance_of_ruin — same idea, run client-side so the
+// slider values you're looking at right now drive the estimate.
+function chanceOfRuin(sceneKey, loadKw, capacityKwh, cycleLife, calendarLifeYears, trials, days) {
+  const calendarRate = batteryCalendarRate(calendarLifeYears);
+  let failures = 0;
+  const failureHours = [];
+  for (let i = 0; i < trials; i++) {
+    const seed = 5000 + i; // separate seed space from the displayed 10-day sim
+    const rows = simulateScene(sceneKey, loadKw, seed, days);
+    let wear = 0.0;
+    for (const r of rows) {
+      const duty = batteryDutyRate(r.b_in, r.b_out, capacityKwh, cycleLife);
+      wear = Math.min(1.0, wear + calendarRate + duty);
+      if (wear >= 1.0) {
+        failures++;
+        failureHours.push(r.h);
+        break;
+      }
+    }
+  }
+  failureHours.sort((a, b) => a - b);
+  const medianFailureHour = failureHours.length ? failureHours[Math.floor(failureHours.length / 2)] : null;
+  return { chance: failures / trials, medianFailureHour };
+}
 
 let currentKey = null;
 let selected = new Set();
@@ -352,9 +547,13 @@ function batteryDischarge(b, requestedKwh) {
 }
 
 // ---------- mirrors engine/run_scene.py simulate_scene ----------
-function simulateScene(sceneKey, loadKw) {
+// seed/days default to the displayed 10-day view; chanceOfRuin() calls this
+// with its own seed range and a longer horizon without touching the display.
+function simulateScene(sceneKey, loadKw, seed, days) {
+  seed = seed === undefined ? SEED : seed;
+  days = days === undefined ? SIM_DAYS : days;
   const scene = SCENES[sceneKey];
-  const weather = hourlyWeather(scene, SIM_DAYS, SEED);
+  const weather = hourlyWeather(scene, days, seed);
   const battery = makeBattery();
   const rows = [];
   weather.forEach(([irradiance, ambientC], hour) => {
@@ -368,7 +567,8 @@ function simulateScene(sceneKey, loadKw) {
     const curtailed = surplus - bIn;
     const served = direct + bOut;
     const unmet = loadKw - served;
-    rows.push({ h: hour, solar: solarKwh, served, load: loadKw, soc: battery.soc_kwh, unmet, curtailed, soc_before: socBefore });
+    rows.push({ h: hour, solar: solarKwh, served, load: loadKw, soc: battery.soc_kwh, unmet, curtailed,
+                soc_before: socBefore, b_in: bIn, b_out: bOut });
   });
   return rows;
 }
@@ -421,15 +621,33 @@ function sceneArt(key, W, H, opts) {
     </g>`;
   }
 
+  // The farm literally grows as you add equipment — this is the build, not a
+  // preview of it. Icon COUNT is capped for legibility (a crowded field reads
+  // as clutter, not "more"), so past the cap extra units show as a small
+  // "+N" tag on the last icon instead of packing the scene tighter.
   let equipment = "";
   if (opts.equipment) {
     const groundY = H * 0.66;
-    equipment += solarIcon(W * 0.20, groundY, 0.95);
-    equipment += batteryIcon(W * 0.36, groundY, 0.85);
-    const botCount = Math.max(1, Math.min(4, opts.botCount || 1));
-    for (let i = 0; i < botCount; i++) {
-      equipment += robotIcon(W * (0.54 + i * 0.11), groundY + (i % 2 === 0 ? 0 : 4), 0.8);
+    const solarShown = Math.max(1, Math.min(4, opts.solarCount || 1));
+    const solarExtra = (opts.solarCount || 1) - solarShown;
+    for (let i = 0; i < solarShown; i++) {
+      equipment += solarIcon(W * (0.08 + i * 0.075), groundY - 6, 0.62);
     }
+    if (solarExtra > 0) equipment += countTag(W * (0.08 + (solarShown - 1) * 0.075) + 26, groundY - 22, "+" + solarExtra);
+
+    const batteryShown = Math.max(1, Math.min(3, opts.batteryCount || 1));
+    const batteryExtra = (opts.batteryCount || 1) - batteryShown;
+    for (let i = 0; i < batteryShown; i++) {
+      equipment += batteryIcon(W * (0.42 + i * 0.06), groundY, 0.6);
+    }
+    if (batteryExtra > 0) equipment += countTag(W * (0.42 + (batteryShown - 1) * 0.06) + 16, groundY - 18, "+" + batteryExtra);
+
+    const botCount = Math.max(1, Math.min(4, opts.botCount || 1));
+    const botExtra = (opts.botCount || 1) - botCount;
+    for (let i = 0; i < botCount; i++) {
+      equipment += robotIcon(W * (0.66 + i * 0.075), groundY + (i % 2 === 0 ? 0 : 4), 0.62);
+    }
+    if (botExtra > 0) equipment += countTag(W * (0.66 + (botCount - 1) * 0.075) + 16, groundY - 24, "+" + botExtra);
   }
 
   return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
@@ -475,6 +693,13 @@ function robotIcon(x, y, scale) {
     <circle cx="8" cy="23" r="3.6" fill="#2c3733"/>
   </g>`;
 }
+// a small "+N" chip for equipment beyond the legible icon cap
+function countTag(x, y, text) {
+  return `<g transform="translate(${x},${y})">
+    <rect x="-11" y="-8" width="${11 + text.length * 5}" height="15" rx="7" fill="#1c2420" opacity="0.72"/>
+    <text x="${-11 + (11 + text.length * 5) / 2}" y="3" font-size="10" font-weight="700" fill="#fff" text-anchor="middle" font-family="Inter, sans-serif">${text}</text>
+  </g>`;
+}
 
 // ---------- stage 1: place picker ----------
 function buildPlaceGrid() {
@@ -495,6 +720,10 @@ function buildPlaceGrid() {
 }
 
 // ---------- fit scoring ----------
+// fit no longer assumes free fertility — a fertility gap doesn't reject a crop
+// outright (you can always import or build fertilizer production), so it isn't
+// folded into the min() the way sun/wind/storm/temp are. It's reported
+// separately as "needs fertilizer" and handled on the build screen.
 function fitScore(scene, crop) {
   const sunFit = scene.sun >= crop.sun_min ? 1 : scene.sun / crop.sun_min;
   const windFit = scene.wind <= crop.wind_max ? 1 : crop.wind_max / scene.wind;
@@ -509,7 +738,8 @@ function fitScore(scene, crop) {
   if (windFit < lo) { lo = windFit; limiter = "wind"; }
   if (stormFit < lo) { lo = stormFit; limiter = "storms"; }
   if (tempFit < lo) { lo = tempFit; limiter = "temperature"; }
-  return { score, limiter };
+  const needsFertilizer = crop.fert_min > scene.fertility;
+  return { score, limiter, needsFertilizer };
 }
 function fitColor(score) {
   if (score >= 0.75) return "var(--served)";
@@ -528,7 +758,7 @@ function buildCropList() {
   document.getElementById("sceneHero").innerHTML = `${sceneArt(currentKey, 860, 220)}
     <div class="cap">
       <div class="name">${scene.label}</div>
-      <div class="ratings">sun ${scene.sun}/10 · wind ${scene.wind}/10 · storm ${scene.storm}/10</div>
+      <div class="ratings">sun ${scene.sun}/10 · wind ${scene.wind}/10 · storm ${scene.storm}/10 · fertility ${scene.fertility}/10</div>
     </div>`;
 
   const scored = CROPS.map(c => ({ ...c, ...fitScore(scene, c) })).sort((a, b) => b.score - a.score);
@@ -536,12 +766,13 @@ function buildCropList() {
   list.innerHTML = scored.map(c => {
     const pct = Math.round(c.score * 100);
     const rejected = c.score < 0.35;
+    const limitText = rejected ? "doesn't take to this place — limited by " + c.limiter : "limited by " + c.limiter;
     return `<div class="crop-row ${rejected ? 'rejected' : ''}">
       <input type="checkbox" id="chk-${c.key}" ${rejected ? "disabled" : ""} onchange="toggleCrop('${c.key}')">
       <div class="body">
         <div class="top"><span class="cname">${c.name}</span><span class="pct">${pct}% fit · +${c.load_kw.toFixed(1)} kW to run</span></div>
         <div class="fit-bar"><div class="fit-fill" style="width:${pct}%; background:${fitColor(c.score)}"></div></div>
-        <div class="limit">${rejected ? "doesn't take to this place — limited by " + c.limiter : "limited by " + c.limiter}</div>
+        <div class="limit">${limitText}${c.needsFertilizer ? " · needs fertilizer here" : ""}</div>
       </div>
     </div>`;
   }).join("");
@@ -553,11 +784,22 @@ function toggleCrop(key) {
   updateSelectionBar();
 }
 
-// base facility draw (sensors, controllers) + 0.3 kW idle per robot + each crop's own equipment
-function totalLoadKw(robots) {
+function fertilizerGapCrops() {
+  const scene = SCENES[currentKey];
+  return [...selected].map(k => CROPS.find(c => c.key === k)).filter(c => c.fert_min > scene.fertility);
+}
+
+// base facility draw + robot idle draw (tier-dependent) + each crop's own equipment
+// + on-farm fertilizer production draw, if that's the choice and there's a gap to close
+function totalLoadKw(robots, robotTierKey, fertilizerChoice) {
   robots = robots || 1;
-  let sum = 0.6 + robots * 0.3;
+  robotTierKey = robotTierKey || "basic";
+  const robotLoadEach = ROBOT_TIERS.find(t => t.key === robotTierKey).load_kw_each;
+  let sum = 0.6 + robots * robotLoadEach;
   selected.forEach(key => { sum += CROPS.find(c => c.key === key).load_kw; });
+  if (fertilizerChoice === "onfarm" && fertilizerGapCrops().length > 0) {
+    sum += COSTS.fert_onfarm_load_kw;
+  }
   return sum;
 }
 
@@ -579,9 +821,14 @@ function updateSelectionBar() {
 // which you can then override with the slider
 function startBuilding() {
   CONFIG.robots = Math.max(1, Math.min(6, selected.size));
+  CONFIG.fertilizerChoice = "import";
+  renderBuildTabs();
   goToStage("build");
 }
 
+// debounced — the ruin estimate runs a small Monte Carlo (15 x 1-year sims),
+// so this doesn't fire it on every pixel of a slider drag
+let configChangeTimer = null;
 function onConfigChange() {
   CONFIG.solarM2 = Number(document.getElementById("cfgSolar").value);
   CONFIG.batteryKwh = Number(document.getElementById("cfgBattery").value);
@@ -589,7 +836,71 @@ function onConfigChange() {
   document.getElementById("valSolar").textContent = CONFIG.solarM2 + " m²";
   document.getElementById("valBattery").textContent = CONFIG.batteryKwh + " kWh";
   document.getElementById("valRobots").textContent = CONFIG.robots;
-  refreshLedger();
+  clearTimeout(configChangeTimer);
+  configChangeTimer = setTimeout(refreshLedger, 90);
+}
+
+// ---------- build-stage sub-navigation: what you're picking vs. what it costs
+// vs. how it performs, one screen at a time instead of one long scroll ----------
+// Money isn't in here — it's pinned above the tabs so it updates live no
+// matter which tab you're on, instead of being a click away.
+const BUILD_TABS = [
+  { key: "Equipment",   label: "Equipment" },
+  { key: "Performance", label: "Performance" },
+  { key: "Almanac",     label: "Almanac" },
+];
+let activeBuildTab = "Equipment";
+function renderBuildTabs() {
+  document.getElementById("buildTabs").innerHTML = BUILD_TABS.map(t =>
+    `<button type="button" class="build-tab ${t.key === activeBuildTab ? 'active' : ''}"
+        onclick="selectBuildTab('${t.key}')">${t.label}</button>`).join("");
+  BUILD_TABS.forEach(t => {
+    document.getElementById("tab" + t.key).classList.toggle("active", t.key === activeBuildTab);
+  });
+}
+function selectBuildTab(key) {
+  activeBuildTab = key;
+  renderBuildTabs();
+  if (key === "Almanac") loadAlmanac();
+}
+
+// ---------- tech tier selectors ----------
+function tierGroupHtml(groupId, tiers, activeKey, subFn, onClick) {
+  return tiers.map(t => `<button type="button" class="tier-btn ${t.key === activeKey ? 'active' : ''}"
+      onclick="${onClick}('${t.key}')">${t.name}<span class="sub">${subFn(t)}</span></button>`).join("");
+}
+
+function selectSolarTier(key) { CONFIG.solarTier = key; renderTiers(); refreshLedger(); }
+function selectBatteryTier(key) { CONFIG.batteryTier = key; renderTiers(); refreshLedger(); }
+function selectRobotTier(key) { CONFIG.robotTier = key; renderTiers(); refreshLedger(); }
+function selectFertilizerChoice(key) { CONFIG.fertilizerChoice = key; renderTiers(); refreshLedger(); }
+
+function renderTiers() {
+  document.getElementById("tierSolar").innerHTML = tierGroupHtml("tierSolar", SOLAR_TIERS, CONFIG.solarTier,
+    t => `${Math.round(t.efficiency * 100)}% · $${t.cost_per_m2}/m²`, "selectSolarTier");
+  document.getElementById("tierBattery").innerHTML = tierGroupHtml("tierBattery", BATTERY_TIERS, CONFIG.batteryTier,
+    t => `${t.cycle_life} cyc · $${t.cost_per_kwh}/kWh`, "selectBatteryTier");
+  document.getElementById("tierRobot").innerHTML = tierGroupHtml("tierRobot", ROBOT_TIERS, CONFIG.robotTier,
+    t => `${t.load_kw_each} kW · $${t.cost_each.toLocaleString()}`, "selectRobotTier");
+
+  const gapCrops = fertilizerGapCrops();
+  const fertPanel = document.getElementById("fertilizerPanel");
+  if (gapCrops.length === 0) {
+    fertPanel.style.display = "none";
+  } else {
+    fertPanel.style.display = "block";
+    const names = gapCrops.map(c => c.name).join(", ");
+    const importCostPerYear = COSTS.fert_import_per_crop_per_year * gapCrops.length;
+    document.getElementById("tierFertilizer").innerHTML = [
+      { key: "import", name: "Import", sub: `$${importCostPerYear}/yr, ongoing` },
+      { key: "onfarm", name: "Build on-farm", sub: `${fmtMoney(COSTS.fert_onfarm_capex)} once, +${COSTS.fert_onfarm_load_kw} kW` },
+    ].map(o => `<button type="button" class="tier-btn ${o.key === CONFIG.fertilizerChoice ? 'active' : ''}"
+        onclick="selectFertilizerChoice('${o.key}')">${o.name}<span class="sub">${o.sub}</span></button>`).join("");
+    document.getElementById("fertilizerHint").textContent =
+      CONFIG.fertilizerChoice === "import"
+        ? `${names} need${gapCrops.length === 1 ? "s" : ""} fertilizer this scene can't give for free. Importing it is cheap to start but is an ongoing cost that crosses the fence — same category grid power always was.`
+        : `${names} need${gapCrops.length === 1 ? "s" : ""} fertilizer this scene can't give for free. Building your own production costs more upfront and draws its own power, but nothing crosses the fence again.`;
+  }
 }
 
 // ---------- stage 3: buildable / ledger ----------
@@ -609,19 +920,31 @@ function buildLedgerView() {
   document.getElementById("valSolar").textContent = CONFIG.solarM2 + " m²";
   document.getElementById("valBattery").textContent = CONFIG.batteryKwh + " kWh";
   document.getElementById("valRobots").textContent = CONFIG.robots;
+  renderTiers();
   refreshLedger();
 }
 
 function refreshLedger() {
   const scene = SCENES[currentKey];
+  const solarTier = SOLAR_TIERS.find(t => t.key === CONFIG.solarTier);
+  const batteryTier = BATTERY_TIERS.find(t => t.key === CONFIG.batteryTier);
+  const robotTier = ROBOT_TIERS.find(t => t.key === CONFIG.robotTier);
+
   SOLAR.area_m2 = CONFIG.solarM2;
+  SOLAR.efficiency = solarTier.efficiency;
   BATTERY_SPEC.capacity_kwh = CONFIG.batteryKwh;
   BATTERY_SPEC.max_charge_kw = CONFIG.batteryKwh * 0.33;
   BATTERY_SPEC.max_discharge_kw = CONFIG.batteryKwh * 0.33;
-  const loadKw = totalLoadKw(CONFIG.robots);
+
+  const loadKw = totalLoadKw(CONFIG.robots, CONFIG.robotTier, CONFIG.fertilizerChoice);
   const names = [...selected].map(k => CROPS.find(c => c.key === k).name).join(", ");
 
-  document.getElementById("sceneHeroBuild").innerHTML = `${sceneArt(currentKey, 860, 190, { equipment: true, botCount: CONFIG.robots })}
+  document.getElementById("sceneHeroBuild").innerHTML = `${sceneArt(currentKey, 860, 190, {
+    equipment: true,
+    solarCount: Math.max(1, Math.round(CONFIG.solarM2 / 25)),
+    batteryCount: Math.max(1, Math.round(CONFIG.batteryKwh / 10)),
+    botCount: CONFIG.robots,
+  })}
     <div class="cap">
       <div class="name">${scene.label} — running</div>
       <div class="ratings">${SIM_DAYS} sim-days, ledger checked every hour</div>
@@ -633,22 +956,46 @@ function refreshLedger() {
   const mood = moodFor(darkHours, minSoc);
   document.getElementById("moodLine").textContent = mood.text;
   document.getElementById("drawLine").innerHTML =
-    `${mood.sub} Growing <b>${names}</b> with ${CONFIG.robots} robot${CONFIG.robots > 1 ? "s" : ""}, ${CONFIG.solarM2} m² of panels and a ${CONFIG.batteryKwh} kWh battery draws <b>${loadKw.toFixed(1)} kW</b> around the clock — that's the load line below. Drag the sliders to fix it.`;
+    `${mood.sub} Growing <b>${names}</b> with ${CONFIG.robots} ${robotTier.name.toLowerCase()}${CONFIG.robots > 1 ? "s" : ""}, ` +
+    `${CONFIG.solarM2} m² of ${solarTier.name.toLowerCase()} panels and a ${CONFIG.batteryKwh} kWh ${batteryTier.name} battery ` +
+    `draws <b>${loadKw.toFixed(1)} kW</b> around the clock — that's the load line below.`;
 
   drawChart(rows);
   drawStats(rows, loadKw);
-  drawMoney(rows, CONFIG);
+  drawMoney(rows, solarTier, batteryTier, robotTier, darkHours);
+  drawReliability(loadKw, batteryTier);
+}
+
+function drawReliability(loadKw, batteryTier) {
+  const { chance, medianFailureHour } = chanceOfRuin(
+    currentKey, loadKw, CONFIG.batteryKwh, batteryTier.cycle_life, batteryTier.calendar_life_years,
+    /* trials */ 15, /* days */ 365
+  );
+  const pct = Math.round(chance * 100);
+  document.getElementById("ruinPct").textContent = pct + "%";
+  document.getElementById("ruinWhen").textContent =
+    medianFailureHour === null ? "—" : "day " + Math.floor(medianFailureHour / 24);
+
+  let verdict;
+  if (chance === 0) verdict = "Across 15 simulated weather years here, this battery never hits end-of-life early.";
+  else if (chance < 0.3) verdict = "A minority of simulated years wear this battery out before its rated life — a longer-cycle-life tier would close that out.";
+  else if (chance < 0.7) verdict = "A real chunk of simulated years wear this battery out early. It's being cycled harder than its rated life assumes.";
+  else verdict = "Most simulated years wear this battery out well before its rated life. This setup is overdrawing it.";
+  document.getElementById("ruinText").textContent = verdict;
 }
 
 function fmtMoney(n) {
   return "$" + Math.round(n).toLocaleString();
 }
 
-function drawMoney(rows, cfg) {
-  const capexSolar = cfg.solarM2 * COSTS.solar_per_m2;
-  const capexBattery = cfg.batteryKwh * COSTS.battery_per_kwh;
-  const capexRobots = cfg.robots * COSTS.robot_each;
-  const capexTotal = capexSolar + capexBattery + capexRobots;
+function drawMoney(rows, solarTier, batteryTier, robotTier, darkHours) {
+  const capexSolar = CONFIG.solarM2 * solarTier.cost_per_m2;
+  const capexBattery = CONFIG.batteryKwh * batteryTier.cost_per_kwh;
+  const capexRobots = CONFIG.robots * robotTier.cost_each;
+  const gapCrops = fertilizerGapCrops();
+  const fertOnFarm = CONFIG.fertilizerChoice === "onfarm" && gapCrops.length > 0;
+  const capexFertilizer = fertOnFarm ? COSTS.fert_onfarm_capex : 0;
+  const capexTotal = capexSolar + capexBattery + capexRobots + capexFertilizer;
 
   document.getElementById("capSolar").textContent = fmtMoney(capexSolar);
   document.getElementById("capBattery").textContent = fmtMoney(capexBattery);
@@ -657,16 +1004,183 @@ function drawMoney(rows, cfg) {
 
   const servedKwhTotal = rows.reduce((s, r) => s + r.served, 0);
   const servedKwhPerDay = servedKwhTotal / SIM_DAYS;
-  const annualAvoidedCost = servedKwhPerDay * 365 * COSTS.grid_rate_per_kwh;
-  const paybackYears = annualAvoidedCost > 0 ? capexTotal / annualAvoidedCost : Infinity;
+  const grossAnnualValue = servedKwhPerDay * 365 * COSTS.off_grid_displacement_per_kwh;
+  const fertImportPerYear = (!fertOnFarm && gapCrops.length > 0)
+    ? COSTS.fert_import_per_crop_per_year * gapCrops.length : 0;
+  const netAnnualValue = grossAnnualValue - fertImportPerYear;
+  const paybackYears = netAnnualValue > 0 ? capexTotal / netAnnualValue : Infinity;
+
   const paybackText = isFinite(paybackYears)
     ? `<b>${paybackYears.toFixed(1)} years</b> to break even`
-    : `no break-even — it isn't serving any load`;
+    : `no break-even — importing fertilizer costs more than the energy is worth`;
+  const fertLine = fertImportPerYear > 0
+    ? ` Importing fertilizer costs ${fmtMoney(fertImportPerYear)}/yr, taken off that before payback.`
+    : "";
 
   document.getElementById("paybackText").innerHTML =
-    `Serving ${servedKwhPerDay.toFixed(1)} kWh/day here would cost about <b>${fmtMoney(annualAvoidedCost)}/yr</b> ` +
-    `from a grid connection, at an assumed $${COSTS.grid_rate_per_kwh.toFixed(2)}/kWh. Against a ${fmtMoney(capexTotal)} build, ` +
-    `that's ${paybackText} — before counting what the crops themselves are worth.`;
+    `Serving ${servedKwhPerDay.toFixed(1)} kWh/day here displaces about <b>${fmtMoney(grossAnnualValue)}/yr</b> ` +
+    `of diesel/propane generation, at an assumed $${COSTS.off_grid_displacement_per_kwh.toFixed(2)}/kWh — the honest comparison for a farm with no grid connection.${fertLine} ` +
+    `Against a ${fmtMoney(capexTotal)} build, that's ${paybackText} — before counting what the crops themselves are worth.`;
+
+  updateWinAndRank(paybackYears, darkHours, {
+    capexTotal, solarTier, batteryTier, robotTier, gapCropsLen: gapCrops.length, fertOnFarm,
+  });
+}
+
+// The win law: payback alone can be gamed by starving the farm (an undersized
+// build "wins" on paper while failing most of the day), so a real win needs
+// BOTH the money target AND a live, working farm. Same rule the constant
+// tuning was grid-searched against — see the git history for that pass.
+const WIN_PAYBACK_YEARS = 1.0;
+const WIN_MAX_DARK_HOURS = 15;
+
+function isWinningBuild(paybackYears, darkHours) {
+  return isFinite(paybackYears) && paybackYears <= WIN_PAYBACK_YEARS && darkHours < WIN_MAX_DARK_HOURS;
+}
+
+function updateWinBanner(paybackYears, darkHours) {
+  const banner = document.getElementById("winBanner");
+  const valueEl = document.getElementById("winValue");
+  const labelEl = document.getElementById("winLabel");
+  const won = isWinningBuild(paybackYears, darkHours);
+  if (!isFinite(paybackYears)) {
+    valueEl.textContent = "never";
+    labelEl.textContent = "Break-even";
+  } else {
+    valueEl.textContent = paybackYears.toFixed(1) + " yr";
+    labelEl.textContent = won ? "Break-even — you beat it" : "Break-even";
+  }
+  banner.classList.toggle("win", won);
+  return won;
+}
+
+// ---------- rank, achievements, and the shared Almanac (leaderboard) ----------
+// Rank is a coarser, more legible read on the same payback number — nobody
+// needs to parse "1.4 years" to know they're close. darkHours gates it the
+// same way it gates the win itself: a starved build can't rank up on payback alone.
+const RANKS = [
+  { key: "fence-keeper",    title: "Fence-Keeper",     max: 1.0  },
+  { key: "self-sufficient", title: "Self-Sufficient",  max: 1.5  },
+  { key: "off-grid",        title: "Off-Grid",         max: 3.0  },
+  { key: "homesteader",     title: "Homesteader",      max: Infinity },
+];
+function rankFor(paybackYears, darkHours) {
+  if (darkHours >= WIN_MAX_DARK_HOURS) return RANKS[RANKS.length - 1]; // a failing farm never outranks Homesteader
+  const p = isFinite(paybackYears) ? paybackYears : Infinity;
+  return RANKS.find(r => p <= r.max) || RANKS[RANKS.length - 1];
+}
+
+// Each check runs against the CURRENT build (ctx below) — real, checkable
+// conditions against the ledger, not decoration.
+const ACHIEVEMENTS = [
+  { key: "first_light", label: "First Light", hint: "Zero unmet hours across the whole run",
+    check: (ctx) => ctx.darkHours === 0 },
+  { key: "alchemist", label: "The Alchemist", hint: "Closed a fertilizer gap by building on-farm",
+    check: (ctx) => ctx.fertOnFarm && ctx.gapCropsLen > 0 },
+  { key: "bare_minimum", label: "Bare Minimum", hint: "Won using only the cheapest tier of everything",
+    check: (ctx) => ctx.won && ctx.solarTier.key === "budget" && ctx.batteryTier.key === "lead" && ctx.robotTier.key === "basic" },
+  { key: "no_waste", label: "No Waste", hint: "Won with a total build under $20,000",
+    check: (ctx) => ctx.won && ctx.capexTotal < 20000 },
+  { key: "fence_keeper", label: "Fence-Keeper", hint: "Beat the payback target with a farm that actually runs",
+    check: (ctx) => ctx.won },
+];
+
+let currentRun = null; // snapshot of the build behind the badges right now — submitRun() reads this
+
+function updateWinAndRank(paybackYears, darkHours, extra) {
+  const won = updateWinBanner(paybackYears, darkHours);
+  const rank = rankFor(paybackYears, darkHours);
+  const rankChip = document.getElementById("rankChip");
+  rankChip.classList.toggle("won", won);
+  document.getElementById("rankTitle").textContent = rank.title;
+
+  const ctx = { won, darkHours, paybackYears, ...extra };
+  const earned = ACHIEVEMENTS.filter(a => a.check(ctx)).map(a => a.key);
+  document.getElementById("badgeRow").innerHTML = ACHIEVEMENTS.map(a =>
+    `<span class="badge ${earned.includes(a.key) ? 'earned' : ''}" title="${a.hint}"><i class="dot2"></i>${a.label}</span>`
+  ).join("");
+
+  currentRun = {
+    won, rank: rank.title, paybackYears, darkHours, capexTotal: extra.capexTotal,
+    scene: currentKey, crops: [...selected], solarTier: extra.solarTier.key, batteryTier: extra.batteryTier.key,
+    robotTier: extra.robotTier.key, solarM2: CONFIG.solarM2, batteryKwh: CONFIG.batteryKwh, robots: CONFIG.robots,
+    fertilizerChoice: CONFIG.fertilizerChoice, achievements: earned,
+  };
+  document.getElementById("submitBtn").disabled = !won;
+}
+
+let dbPromise = null;
+function getDb() {
+  if (!dbPromise) {
+    dbPromise = (typeof claude !== "undefined" && claude.use)
+      ? claude.use("db").catch(() => null)
+      : Promise.resolve(null);
+  }
+  return dbPromise;
+}
+
+async function submitRun() {
+  if (!currentRun || !currentRun.won) return;
+  const btn = document.getElementById("submitBtn");
+  const db = await getDb();
+  if (!db) {
+    btn.textContent = "Almanac unavailable here";
+    return;
+  }
+  const name = (prompt("Name this run for the Almanac (a callsign, not your real name):") || "").trim().slice(0, 40);
+  if (!name) return;
+  btn.disabled = true;
+  btn.textContent = "Submitting...";
+  try {
+    await db.collection("runs").add({
+      ...currentRun,
+      name,
+      ts: Date.now(),
+    });
+    btn.textContent = "Submitted!";
+    loadAlmanac();
+  } catch (e) {
+    btn.textContent = "Couldn't submit — try again";
+    btn.disabled = false;
+  }
+}
+
+async function loadAlmanac() {
+  const hintEl = document.getElementById("almanacHint");
+  const listEl = document.getElementById("almanacList");
+  const db = await getDb();
+  if (!db) {
+    hintEl.textContent = "The shared Almanac isn't available in this view — your own run still counts locally.";
+    listEl.innerHTML = "";
+    return;
+  }
+  try {
+    const snap = await db.collection("runs").where("won", "==", true).orderBy("paybackYears", "asc").limit(25).get();
+    if (snap.empty) {
+      hintEl.textContent = "No qualifying runs yet — be the first to beat the target and submit yours.";
+      listEl.innerHTML = "";
+      return;
+    }
+    hintEl.textContent = `${snap.size} qualifying run${snap.size === 1 ? "" : "s"}, ranked by payback.`;
+    listEl.innerHTML = snap.docs.map((doc, i) => {
+      const r = doc.data();
+      const cropNames = (r.crops || []).map(k => (CROPS.find(c => c.key === k) || {}).name || k).join(", ");
+      return `<div class="almanac-row">
+        <span class="almanac-rank">${i + 1}</span>
+        <div class="almanac-body">
+          <div class="almanac-name">${escapeHtml(r.name || "anonymous")} <span style="font-weight:500;color:var(--sub);">— ${escapeHtml(r.rank || "")}</span></div>
+          <div class="almanac-detail">${escapeHtml(SCENES[r.scene] ? SCENES[r.scene].label : r.scene)} · ${escapeHtml(cropNames)} · ${(r.achievements || []).length} badge${(r.achievements || []).length === 1 ? "" : "s"}</div>
+        </div>
+        <span class="almanac-payback">${Number(r.paybackYears).toFixed(2)}y</span>
+      </div>`;
+    }).join("");
+  } catch (e) {
+    hintEl.textContent = "Couldn't load the Almanac right now.";
+  }
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
 function drawStats(rows, loadKw) {
