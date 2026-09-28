@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tillwatt Scenes</title>
+<style>
+  :root {
+    --bg: #f6f4ee; --panel: #ffffff; --ink: #1c2420; --sub: #667069; --line: #e2ded2;
+    --solar: #e8a318; --served: #3f8f6f; --soc: #2b6f8f; --unmet: #c65b4a; --accent: #2b6f8f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14201b; --panel: #1b2a23; --ink: #eef1ec; --sub: #9db0a5; --line: #2d3d34;
+      --solar: #f0b93a; --served: #57b791; --soc: #5fa9d6; --unmet: #e0806b; --accent: #5fa9d6;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14201b; --panel: #1b2a23; --ink: #eef1ec; --sub: #9db0a5; --line: #2d3d34;
+    --solar: #f0b93a; --served: #57b791; --soc: #5fa9d6; --unmet: #e0806b; --accent: #5fa9d6;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding: 16px;
+  }
+  .wrap { max-width: 860px; margin: 0 auto; }
+
+  header { margin-bottom: 16px; }
+  h1 { font-size: 21px; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .tagline { color: var(--sub); font-size: 13.5px; margin: 0; }
+
+  .stage { display: none; }
+  .stage.active { display: block; }
+
+  /* --- stage 1: pick a place --- */
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  @media (max-width: 520px) { .grid { grid-template-columns: 1fr; } }
+  .place-card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+    overflow: hidden; cursor: pointer; text-align: left; padding: 0; display: block; width: 100%;
+  }
+  .place-card svg { width: 100%; height: auto; display: block; }
+  .place-card .cap { padding: 10px 12px 12px; }
+  .place-card .name { font-weight: 700; font-size: 14px; }
+  .place-card .ratings { color: var(--sub); font-size: 11.5px; margin-top: 3px; }
+
+  /* --- stage 2: crops narrow down --- */
+  .back-link {
+    background: none; border: none; color: var(--accent); font-size: 13px;
+    font-weight: 600; cursor: pointer; padding: 0; margin-bottom: 12px;
+  }
+  .scene-hero { border-radius: 14px; overflow: hidden; border: 1px solid var(--line); margin-bottom: 14px; }
+  .scene-hero svg { width: 100%; height: auto; display: block; }
+  .scene-hero .cap { background: var(--panel); padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; }
+  .scene-hero .name { font-weight: 700; font-size: 15px; }
+  .scene-hero .ratings { color: var(--sub); font-size: 12px; }
+
+  .hint { font-size: 12.5px; color: var(--sub); margin: -6px 0 10px; }
+  .crop-list { display: flex; flex-direction: column; gap: 8px; }
+  .crop-row {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+    padding: 10px 12px; display: flex; gap: 10px; align-items: flex-start;
+  }
+  .crop-row.rejected { opacity: 0.4; }
+  .crop-row input[type=checkbox] { margin-top: 3px; width: 16px; height: 16px; flex: none; }
+  .crop-row .body { flex: 1; min-width: 0; }
+  .crop-row .top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; gap: 8px; }
+  .crop-row .cname { font-weight: 600; font-size: 13.5px; }
+  .crop-row .pct { font-size: 12px; color: var(--sub); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .fit-bar { height: 6px; border-radius: 4px; background: var(--line); overflow: hidden; }
+  .fit-fill { height: 100%; border-radius: 4px; }
+  .crop-row .limit { font-size: 11px; color: var(--sub); margin-top: 5px; }
+
+  .selection-bar {
+    position: sticky; bottom: 12px; margin-top: 14px; background: var(--panel);
+    border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px;
+    display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  }
+  .selection-bar .txt { font-size: 12.5px; color: var(--sub); }
+  .selection-bar .txt b { color: var(--ink); }
+  .cta {
+    padding: 11px 16px; border-radius: 9px; border: none; background: var(--accent);
+    color: white; font-size: 13.5px; font-weight: 700; cursor: pointer; white-space: nowrap;
+  }
+  .cta:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* --- stage 3: buildable / ledger --- */
+  .draw-line { font-size: 13px; color: var(--sub); margin: -6px 0 12px; }
+  .draw-line b { color: var(--ink); }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: var(--sub); margin-bottom: 10px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+  svg#chart { width: 100%; height: auto; display: block; }
+  .grid-line { stroke: var(--line); stroke-width: 1; }
+  .axis-label { fill: var(--sub); font-size: 9px; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-top: 14px; }
+  .stat { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  .stat .n { font-size: 18px; font-weight: 700; }
+  .stat .l { font-size: 11px; color: var(--sub); margin-top: 2px; }
+
+  footer { margin-top: 16px; font-size: 11px; color: var(--sub); text-align: center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1 id="pageTitle">Tillwatt — choose your place</h1>
+    <p class="tagline" id="pageTag">Every place is a designed climate, not a real one. No coordinates, no map — just ratings.</p>
+  </header>
+
+  <div class="stage active" id="stage-pick">
+    <div class="grid" id="placeGrid"></div>
+  </div>
+
+  <div class="stage" id="stage-crops">
+    <button class="back-link" onclick="goToStage('pick')">&larr; choose a different place</button>
+    <div class="scene-hero" id="sceneHero"></div>
+    <p class="hint">Check the crops you're planting. Each one draws its own power to grow — pumps, dryers, climate control — and that draw becomes the load the farm's energy has to cover.</p>
+    <div class="crop-list" id="cropList"></div>
+    <div class="selection-bar">
+      <span class="txt" id="selectionTxt">Nothing selected yet</span>
+      <button class="cta" id="ctaBuild" disabled onclick="goToStage('build')">Start building &rarr;</button>
+    </div>
+  </div>
+
+  <div class="stage" id="stage-build">
+    <button class="back-link" onclick="goToStage('crops')">&larr; back to crops</button>
+    <div class="scene-hero" id="sceneHeroBuild"></div>
+    <p class="draw-line" id="drawLine"></p>
+    <div class="panel">
+      <div class="legend">
+        <span><i class="dot" style="background:var(--solar)"></i>solar produced</span>
+        <span><i class="dot" style="background:var(--served)"></i>load served</span>
+        <span><i class="dot" style="background:var(--soc)"></i>battery charge</span>
+        <span><i class="dot" style="background:var(--unmet)"></i>unmet load</span>
+      </div>
+      <svg id="chart" viewBox="0 0 860 300" preserveAspectRatio="xMidYMid meet"></svg>
+    </div>
+    <div class="stats" id="stats"></div>
+  </div>
+
+  <footer>field · plateau · floodplain · island — designed climates, no real-world coordinates</footer>
+</div>
+
+<script>
+// ============================================================
+// This page mirrors engine/scenes.py, engine/weather_from_rating.py,
+// engine/parts.py and engine/run_scene.py so the chart below is an
+// actual re-run of the ledger against whatever you pick — not a
+// canned illustration. The Python engine + its pytest suite remain
+// the authority; this is the same math, ported to run in the browser.
+// ============================================================
+
+const SCENES = {
+  field:      { label: "Open Field",       sun: 7, wind: 4, storm: 3, temp: [-5, 30] },
+  plateau:    { label: "Mountain Plateau",  sun: 8, wind: 7, storm: 5, temp: [-15, 22] },
+  floodplain: { label: "River Floodplain",  sun: 6, wind: 3, storm: 6, temp: [2, 34] },
+  island:     { label: "Coastal Island",    sun: 8, wind: 8, storm: 4, temp: [15, 32] },
+};
+
+// sun_min / wind_max / storm_tol / temp band decide fit.
+// load_kw is what actually growing & processing this crop draws from the farm's power bus —
+// this is what ties your crop picks to the ledger simulation.
+const CROPS = [
+  { key: "wheat",   name: "Wheat",           sun_min: 6, wind_max: 6, storm_tol: 0.5, temp: [-5, 28], load_kw: 2.4 },
+  { key: "potato",  name: "Potatoes",        sun_min: 4, wind_max: 8, storm_tol: 0.7, temp: [-10, 24], load_kw: 3.1 },
+  { key: "greens",  name: "Leafy Greens",    sun_min: 3, wind_max: 5, storm_tol: 0.4, temp: [0, 26], load_kw: 4.0 },
+  { key: "hemp",    name: "Hemp",            sun_min: 7, wind_max: 9, storm_tol: 0.8, temp: [0, 32], load_kw: 2.8 },
+  { key: "sorghum", name: "Sorghum",         sun_min: 8, wind_max: 7, storm_tol: 0.6, temp: [10, 34], load_kw: 2.0 },
+  { key: "kelp",    name: "Kelp (wet-site)", sun_min: 5, wind_max: 9, storm_tol: 0.9, temp: [5, 30], load_kw: 3.6 },
+];
+
+const BASE_FARM_LOAD_KW = 1.2; // sensors, control systems, robots idling — draws even with nothing planted
+const SOLAR = { area_m2: 100.0, efficiency: 0.20, temp_coeff_per_c: 0.004, noct_slope: 0.03125 };
+const BATTERY_SPEC = { capacity_kwh: 60.0, round_trip_eff: 0.90, max_charge_kw: 20.0, max_discharge_kw: 20.0, start_soc_kwh: 30.0 };
+const SIM_DAYS = 10;
+const SEED = 1;
+
+let currentKey = null;
+let selected = new Set();
+let stage = "pick";
+
+// ---------- seeded RNG (deterministic, browser-side mirror of the Python engine's seeding) ----------
+function makeRng(seed) {
+  let s = seed >>> 0 || 1;
+  return function () {
+    s = (s + 0x6D2B79F5) | 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// ---------- mirrors engine/weather_from_rating.py ----------
+function hourlyWeather(scene, days, seed) {
+  const rng = makeRng(seed);
+  const peakIrradiance = 400.0 + 60.0 * scene.sun;
+  const baseClearness = 0.35 + 0.05 * scene.sun;
+  const stormChance = 0.03 * scene.storm;
+  const [tMin, tMax] = scene.temp;
+  const tMid = (tMin + tMax) / 2.0;
+  const tSwing = (tMax - tMin) / 2.0;
+  const out = [];
+  for (let day = 0; day < days; day++) {
+    const season = Math.sin(2.0 * Math.PI * (day - 80) / 365.0);
+    const dayTempMid = tMid + tSwing * 0.6 * season;
+    let clearness = baseClearness;
+    if (rng() < stormChance) clearness *= (0.1 + rng() * 0.3);
+    else clearness *= (0.85 + rng() * 0.2);
+    clearness = Math.max(0.05, Math.min(1.0, clearness));
+    for (let hour = 0; hour < 24; hour++) {
+      let irradiance = 0.0;
+      if (hour >= 6 && hour < 18) {
+        const shape = Math.sin(Math.PI * (hour - 6 + 0.5) / 12.0);
+        irradiance = peakIrradiance * shape * clearness * (0.92 + rng() * 0.08);
+      }
+      const hourTemp = dayTempMid + tSwing * 0.4 * Math.sin(2.0 * Math.PI * (hour - 9) / 24.0);
+      out.push([Math.max(0.0, irradiance), hourTemp]);
+    }
+  }
+  return out;
+}
+
+// ---------- mirrors engine/parts.py SolarArray.output_kwh ----------
+function solarOutputKwh(irradianceWm2, ambientC) {
+  const cellC = ambientC + SOLAR.noct_slope * irradianceWm2;
+  const derate = Math.max(0.0, 1.0 - SOLAR.temp_coeff_per_c * (cellC - 25.0));
+  const kw = SOLAR.area_m2 * (irradianceWm2 / 1000.0) * SOLAR.efficiency * derate;
+  return Math.max(0.0, kw);
+}
+
+// ---------- mirrors engine/parts.py Battery.charge / discharge ----------
+function makeBattery() {
+  return { soc_kwh: BATTERY_SPEC.start_soc_kwh, eta: Math.sqrt(BATTERY_SPEC.round_trip_eff) };
+}
+function batteryCharge(b, offeredKwh) {
+  const headroom = BATTERY_SPEC.capacity_kwh - b.soc_kwh;
+  let taken = Math.min(offeredKwh, BATTERY_SPEC.max_charge_kw, headroom / b.eta);
+  taken = Math.max(0.0, taken);
+  b.soc_kwh = Math.min(BATTERY_SPEC.capacity_kwh, b.soc_kwh + taken * b.eta);
+  return taken;
+}
+function batteryDischarge(b, requestedKwh) {
+  let delivered = Math.min(requestedKwh, BATTERY_SPEC.max_discharge_kw, b.soc_kwh * b.eta);
+  delivered = Math.max(0.0, delivered);
+  b.soc_kwh = Math.max(0.0, b.soc_kwh - delivered / b.eta);
+  return delivered;
+}
+
+// ---------- mirrors engine/run_scene.py simulate_scene ----------
+function simulateScene(sceneKey, loadKw) {
+  const scene = SCENES[sceneKey];
+  const weather = hourlyWeather(scene, SIM_DAYS, SEED);
+  const battery = makeBattery();
+  const rows = [];
+  weather.forEach(([irradiance, ambientC], hour) => {
+    const solarKwh = solarOutputKwh(irradiance, ambientC);
+    const socBefore = battery.soc_kwh;
+    const direct = Math.min(solarKwh, loadKw);
+    const surplus = solarKwh - direct;
+    const deficit = loadKw - direct;
+    const bIn = surplus > 0 ? batteryCharge(battery, surplus) : 0.0;
+    const bOut = deficit > 0 ? batteryDischarge(battery, deficit) : 0.0;
+    const curtailed = surplus - bIn;
+    const served = direct + bOut;
+    const unmet = loadKw - served;
+    rows.push({ h: hour, solar: solarKwh, served, load: loadKw, soc: battery.soc_kwh, unmet, curtailed, soc_before: socBefore });
+  });
+  return rows;
+}
+
+// ---------- simple flat-vector scene art ----------
+function sceneArt(key, W, H) {
+  const s = SCENES[key];
+  const skyBottom = { field: "#cfe6ef", plateau: "#dbeaf2", floodplain: "#cdd9d6", island: "#bfe9ea" }[key];
+  const skyTop =    { field: "#8fc7de", plateau: "#a9cfe0", floodplain: "#9db3ad", island: "#6fc7d4" }[key];
+  const groundMain = { field: "#5c8c4a", plateau: "#7a7256", floodplain: "#5c8c4a", island: "#4d8a52" }[key];
+  const groundDark  = { field: "#456b37", plateau: "#5c5640", floodplain: "#456b37", island: "#3a6d3e" }[key];
+  const waterColor = "#5c95ad";
+
+  let ground = "";
+  if (key === "field") {
+    ground = `<path d="M0,${H*0.62} Q${W*0.25},${H*0.55} ${W*0.5},${H*0.6} T${W},${H*0.58} V${H} H0 Z" fill="${groundMain}"/>
+               <path d="M0,${H*0.72} Q${W*0.3},${H*0.68} ${W*0.6},${H*0.74} T${W},${H*0.7} V${H} H0 Z" fill="${groundDark}"/>`;
+  } else if (key === "plateau") {
+    ground = `<path d="M0,${H} V${H*0.7} L${W*0.15},${H*0.7} L${W*0.22},${H*0.5} L${W*0.4},${H*0.5} L${W*0.47},${H*0.68} L${W*0.7},${H*0.68} L${W*0.78},${H*0.45} L${W},${H*0.45} V${H} Z" fill="${groundMain}"/>
+               <path d="M${W*0.22},${H*0.5} L${W*0.4},${H*0.5} L${W*0.36},${H*0.4} L${W*0.26},${H*0.4} Z" fill="${groundDark}"/>
+               <path d="M${W*0.78},${H*0.45} L${W},${H*0.45} L${W*0.92},${H*0.32} L${W*0.85},${H*0.32} Z" fill="${groundDark}"/>`;
+  } else if (key === "floodplain") {
+    ground = `<path d="M0,${H*0.6} V${H} H${W} V${H*0.6} Z" fill="${groundMain}"/>
+               <path d="M0,${H*0.78} Q${W*0.2},${H*0.7} ${W*0.4},${H*0.8} T${W*0.75},${H*0.76} T${W},${H*0.82} V${H} H0 Z" fill="${waterColor}"/>`;
+  } else if (key === "island") {
+    ground = `<ellipse cx="${W*0.5}" cy="${H*1.05}" rx="${W*0.62}" ry="${H*0.4}" fill="${waterColor}"/>
+               <path d="M${W*0.18},${H*0.78} Q${W*0.5},${H*0.55} ${W*0.82},${H*0.78} Q${W*0.6},${H*0.9} ${W*0.5},${H*0.86} Q${W*0.38},${H*0.9} ${W*0.18},${H*0.78} Z" fill="${groundMain}"/>`;
+  }
+
+  const sunR = 8 + s.sun * 2.2;
+  const sun = `<circle cx="${W*0.78}" cy="${H*0.24}" r="${sunR}" fill="#f2b705" opacity="0.92"/>`;
+
+  let wind = "";
+  const windCount = Math.round(s.wind / 2);
+  for (let i = 0; i < windCount; i++) {
+    const y = H * (0.12 + i * 0.09);
+    const x0 = W * 0.06 + (i % 2) * 10;
+    wind += `<path d="M${x0},${y} q18,-6 34,0 t30,0" stroke="#ffffff" stroke-width="2" fill="none" opacity="0.5" stroke-linecap="round"/>`;
+  }
+
+  let clouds = "";
+  const cloudCount = Math.round(s.storm / 2.5);
+  for (let i = 0; i < cloudCount; i++) {
+    const cx = W * (0.15 + i * 0.22), cy = H * (0.16 + (i % 2) * 0.08);
+    clouds += `<g opacity="${0.35 + s.storm * 0.04}">
+      <ellipse cx="${cx}" cy="${cy}" rx="20" ry="9" fill="#eef2f0"/>
+      <ellipse cx="${cx+14}" cy="${cy-4}" rx="15" ry="8" fill="#eef2f0"/>
+      <ellipse cx="${cx-12}" cy="${cy+2}" rx="13" ry="7" fill="#eef2f0"/>
+    </g>`;
+  }
+
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+    <defs><linearGradient id="sky-${key}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${skyTop}"/><stop offset="100%" stop-color="${skyBottom}"/>
+    </linearGradient></defs>
+    <rect width="${W}" height="${H}" fill="url(#sky-${key})"/>
+    ${sun}${wind}${ground}${clouds}
+  </svg>`;
+}
+
+// ---------- stage 1: place picker ----------
+function buildPlaceGrid() {
+  const grid = document.getElementById("placeGrid");
+  grid.innerHTML = "";
+  Object.keys(SCENES).forEach(key => {
+    const s = SCENES[key];
+    const card = document.createElement("button");
+    card.className = "place-card";
+    card.onclick = () => selectScene(key);
+    card.innerHTML = `${sceneArt(key, 300, 170)}
+      <div class="cap">
+        <div class="name">${s.label}</div>
+        <div class="ratings">sun ${s.sun}/10 · wind ${s.wind}/10 · storm ${s.storm}/10</div>
+      </div>`;
+    grid.appendChild(card);
+  });
+}
+
+// ---------- fit scoring (Liebig: the scarcest factor sets the score) ----------
+function fitScore(scene, crop) {
+  const sunFit = scene.sun >= crop.sun_min ? 1 : scene.sun / crop.sun_min;
+  const windFit = scene.wind <= crop.wind_max ? 1 : crop.wind_max / scene.wind;
+  const stormFit = 1 - (scene.storm / 10) * (1 - crop.storm_tol);
+  const overlapLo = Math.max(scene.temp[0], crop.temp[0]);
+  const overlapHi = Math.min(scene.temp[1], crop.temp[1]);
+  const overlap = Math.max(0, overlapHi - overlapLo);
+  const sceneSpan = scene.temp[1] - scene.temp[0];
+  const tempFit = sceneSpan > 0 ? Math.min(1, overlap / sceneSpan) : 1;
+  const score = Math.min(sunFit, windFit, stormFit, tempFit);
+  let limiter = "sun", lo = sunFit;
+  if (windFit < lo) { lo = windFit; limiter = "wind"; }
+  if (stormFit < lo) { lo = stormFit; limiter = "storms"; }
+  if (tempFit < lo) { lo = tempFit; limiter = "temperature"; }
+  return { score, limiter };
+}
+function fitColor(score) {
+  if (score >= 0.75) return "var(--served)";
+  if (score >= 0.4) return "var(--solar)";
+  return "var(--unmet)";
+}
+
+function selectScene(key) {
+  currentKey = key;
+  selected = new Set();
+  goToStage("crops");
+}
+
+function buildCropList() {
+  const scene = SCENES[currentKey];
+  document.getElementById("sceneHero").innerHTML = `${sceneArt(currentKey, 860, 220)}
+    <div class="cap">
+      <div class="name">${scene.label}</div>
+      <div class="ratings">sun ${scene.sun}/10 · wind ${scene.wind}/10 · storm ${scene.storm}/10</div>
+    </div>`;
+
+  const scored = CROPS.map(c => ({ ...c, ...fitScore(scene, c) })).sort((a, b) => b.score - a.score);
+  const list = document.getElementById("cropList");
+  list.innerHTML = scored.map(c => {
+    const pct = Math.round(c.score * 100);
+    const rejected = c.score < 0.35;
+    return `<div class="crop-row ${rejected ? 'rejected' : ''}">
+      <input type="checkbox" id="chk-${c.key}" ${rejected ? "disabled" : ""} onchange="toggleCrop('${c.key}')">
+      <div class="body">
+        <div class="top"><span class="cname">${c.name}</span><span class="pct">${pct}% fit · +${c.load_kw.toFixed(1)} kW to run</span></div>
+        <div class="fit-bar"><div class="fit-fill" style="width:${pct}%; background:${fitColor(c.score)}"></div></div>
+        <div class="limit">${rejected ? "doesn't take to this place — limited by " + c.limiter : "limited by " + c.limiter}</div>
+      </div>
+    </div>`;
+  }).join("");
+  updateSelectionBar();
+}
+
+function toggleCrop(key) {
+  if (selected.has(key)) selected.delete(key); else selected.add(key);
+  updateSelectionBar();
+}
+
+function totalLoadKw() {
+  let sum = BASE_FARM_LOAD_KW;
+  selected.forEach(key => { sum += CROPS.find(c => c.key === key).load_kw; });
+  return sum;
+}
+
+function updateSelectionBar() {
+  const txt = document.getElementById("selectionTxt");
+  const cta = document.getElementById("ctaBuild");
+  if (selected.size === 0) {
+    txt.innerHTML = "Nothing selected yet — pick at least one crop";
+    cta.disabled = true;
+  } else {
+    const names = [...selected].map(k => CROPS.find(c => c.key === k).name).join(" + ");
+    txt.innerHTML = `<b>${names}</b> — ${totalLoadKw().toFixed(1)} kW total draw`;
+    cta.disabled = false;
+  }
+}
+
+// ---------- stage 3: buildable / ledger ----------
+function buildLedgerView() {
+  const scene = SCENES[currentKey];
+  const loadKw = totalLoadKw();
+  const names = [...selected].map(k => CROPS.find(c => c.key === k).name).join(", ");
+
+  document.getElementById("sceneHeroBuild").innerHTML = `${sceneArt(currentKey, 860, 160)}
+    <div class="cap">
+      <div class="name">${scene.label} — running</div>
+      <div class="ratings">${SIM_DAYS} sim-days, ledger checked every hour</div>
+    </div>`;
+  document.getElementById("drawLine").innerHTML =
+    `Growing <b>${names}</b> draws <b>${loadKw.toFixed(1)} kW</b> around the clock (base farm systems + crop equipment). That's the load line below — everything else has to cover it without crossing the fence.`;
+
+  const rows = simulateScene(currentKey, loadKw);
+  drawChart(rows);
+  drawStats(rows, loadKw);
+}
+
+function drawStats(rows, loadKw) {
+  const totalSolar = rows.reduce((s, r) => s + r.solar, 0);
+  const totalServed = rows.reduce((s, r) => s + r.served, 0);
+  const darkHours = rows.filter(r => r.unmet > 1e-6).length;
+  const minSoc = Math.min(...rows.map(r => r.soc));
+  const stats = [
+    { n: totalSolar.toFixed(0) + " kWh", l: "solar produced" },
+    { n: totalServed.toFixed(0) + " kWh", l: "load served" },
+    { n: darkHours + " h", l: "hours unmet" },
+    { n: minSoc.toFixed(0) + " kWh", l: "lowest battery" },
+  ];
+  document.getElementById("stats").innerHTML = stats.map(s => `<div class="stat"><div class="n">${s.n}</div><div class="l">${s.l}</div></div>`).join("");
+}
+
+function drawChart(rows) {
+  const svg = document.getElementById("chart");
+  const W = 860, H = 300, padL = 34, padR = 8, padT = 10, padB = 20;
+  const plotW = W - padL - padR, plotH = H - padT - padB;
+  const n = rows.length;
+  const maxKwh = Math.max(...rows.map(r => Math.max(r.solar, r.load)), 1) * 1.15;
+  const maxSoc = Math.max(...rows.map(r => r.soc), 1) * 1.15;
+  const x = i => padL + (i / (n - 1)) * plotW;
+  const yKwh = v => padT + plotH - (v / maxKwh) * plotH;
+  const ySoc = v => padT + plotH - (v / maxSoc) * plotH;
+  const path = (key, yfn) => {
+    let d = "";
+    rows.forEach((r, i) => { d += (i === 0 ? "M" : "L") + x(i).toFixed(1) + "," + yfn(r[key]).toFixed(1) + " "; });
+    return d;
+  };
+  let gridLines = "", dayLabels = "";
+  const days = Math.round(n / 24);
+  for (let d = 0; d <= days; d++) {
+    const i = Math.min(d * 24, n - 1);
+    gridLines += `<line class="grid-line" x1="${x(i)}" y1="${padT}" x2="${x(i)}" y2="${padT + plotH}"/>`;
+    if (d < days) dayLabels += `<text class="axis-label" x="${x(i) + 4}" y="${H - 6}">day ${d + 1}</text>`;
+  }
+  const unmetMarks = rows.map((r, i) => (r.unmet > 1e-6 ? `<line x1="${x(i)}" y1="${padT}" x2="${x(i)}" y2="${padT + plotH}" stroke="var(--unmet)" stroke-width="1" opacity="0.35"/>` : "")).join("");
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  svg.innerHTML = `
+    ${gridLines}
+    <line class="grid-line" x1="${padL}" y1="${padT + plotH}" x2="${padL + plotW}" y2="${padT + plotH}"/>
+    ${unmetMarks}
+    <path d="${path('solar', yKwh)}" fill="none" stroke="var(--solar)" stroke-width="1.6"/>
+    <path d="${path('served', yKwh)}" fill="none" stroke="var(--served)" stroke-width="1.6"/>
+    <path d="${path('soc', ySoc)}" fill="none" stroke="var(--soc)" stroke-width="1.6" stroke-dasharray="3,2"/>
+    ${dayLabels}
+  `;
+}
+
+// ---------- stage router ----------
+function goToStage(next) {
+  stage = next;
+  document.querySelectorAll(".stage").forEach(el => el.classList.remove("active"));
+  document.getElementById("stage-" + next).classList.add("active");
+  const titles = {
+    pick:  ["Tillwatt — choose your place", "Every place is a designed climate, not a real one. No coordinates, no map — just ratings."],
+    crops: ["Tillwatt — what grows here", "The place sets the terms. Pick what you're planting — that decides the load."],
+    build: ["Tillwatt — the ledger", "Nothing crosses the fence. Solar in, battery between, your crops' draw served — checked every hour."],
+  };
+  document.getElementById("pageTitle").textContent = titles[next][0];
+  document.getElementById("pageTag").textContent = titles[next][1];
+  if (next === "crops") buildCropList();
+  if (next === "build") buildLedgerView();
+}
+
+buildPlaceGrid();
+</script>
+</body>
+</html>
