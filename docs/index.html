@@ -140,39 +140,42 @@
   .sandbox-chip {
     flex: 1 1 auto; min-width: 96px; padding: 8px 10px; border-radius: 9px; border: 1px solid var(--line);
     background: var(--bg); color: var(--ink); font-size: 11.5px; font-weight: 600; text-align: center;
-    line-height: 1.35; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none;
+    line-height: 1.35; cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none;
     transition: opacity .15s ease, border-color .15s ease;
   }
   .sandbox-chip .emoji { display: block; font-size: 17px; margin-bottom: 2px; }
   .sandbox-chip .sub { display: block; font-weight: 400; color: var(--sub); font-size: 10px; margin-top: 2px; }
   .sandbox-chip.maxed { opacity: 0.4; cursor: not-allowed; }
+  .sandbox-chip.armed { border-color: var(--accent); background: var(--accent); color: #fff; }
+  .sandbox-chip.armed .sub { color: rgba(255,255,255,.85); }
   .sandbox-wrap { position: relative; }
   svg#sandboxCanvas {
-    width: 100%; height: 520px; display: block; border-radius: 10px; border: 1px solid var(--line);
-    background: var(--bg); touch-action: none; cursor: default;
+    width: 100%; height: auto; aspect-ratio: 760 / 480; display: block; border-radius: 14px;
+    background: transparent; cursor: default;
   }
-  @media (max-width: 520px) { svg#sandboxCanvas { height: 420px; } }
-  .sandbox-zoom { display: none; } /* fixed canvas — no free pan/zoom */
-  .sandbox-tool-bar {
-    display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap;
+  .sandbox-row-path { pointer-events: stroke; cursor: pointer; }
+  .sandbox-wire line { pointer-events: stroke; cursor: pointer; }
+  .sandbox-unpowered { opacity: 0.4; transition: opacity .2s ease; }
+  .farm-controls { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+  @media (max-width: 760px) { .farm-controls { grid-template-columns: 1fr; } }
+  .farm-card { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; background: var(--bg); }
+  .farm-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+  .farm-card-title { font-weight: 700; font-size: 13px; color: var(--ink); }
+  .farm-card-sub { font-size: 11px; color: var(--sub); margin-top: 2px; }
+  .stepper { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .stepper button {
+    width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel);
+    color: var(--ink); font-size: 19px; font-weight: 700; line-height: 1; cursor: pointer;
   }
-  .sandbox-tool {
-    padding: 6px 12px; border-radius: 8px; border: 1px solid var(--line);
-    background: var(--bg); color: var(--ink); font-size: 11.5px; font-weight: 600;
-    cursor: pointer; transition: all .15s ease;
-  }
-  .sandbox-tool.active { background: var(--served); border-color: var(--served); color: white; }
-  .sandbox-wire { stroke: #c9a227; stroke-width: 2.2; fill: none; stroke-linecap: round; opacity: 0.85; }
-  .sandbox-wire.flow { stroke-dasharray: 6 4; animation: wireFlow 1.2s linear infinite; }
-  @keyframes wireFlow { to { stroke-dashoffset: -20; } }
-  .sandbox-user-row { stroke: #4a7a3a; stroke-width: 8; fill: none; stroke-linecap: round; opacity: 0.55; }
-  .sandbox-connect-hint {
-    position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
-    background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
-    padding: 6px 12px; font-size: 11.5px; font-weight: 600; color: var(--ink);
-    box-shadow: 0 4px 12px rgba(20,30,25,.12); display: none; z-index: 6; white-space: nowrap;
-  }
-  .sandbox-connect-hint.show { display: block; }
+  .stepper button:disabled { opacity: .35; cursor: not-allowed; }
+  .stepper .n { min-width: 22px; text-align: center; font-weight: 700; font-size: 16px; color: var(--ink); }
+  .farm-card .tier-group { display: flex; gap: 6px; flex-wrap: wrap; }
+  .farm-card .tier-btn { min-width: 0; }
+  .farm-conduit { animation: farmFlow 1.4s linear infinite; }
+  @keyframes farmFlow { to { stroke-dashoffset: -22; } }
+  @media (prefers-reduced-motion: reduce) { .farm-conduit { animation: none; } }
+  .mode-toolbar { margin-bottom: 8px; }
+  .rjp-sub { font-size: 10.5px; font-weight: 700; color: var(--sub); margin: 8px 0 4px; }
   .sandbox-ghost {
     position: fixed; left: 0; top: 0; font-size: 22px; pointer-events: none; z-index: 999;
     transform: translate(-50%, -50%); opacity: 0.85; filter: drop-shadow(0 2px 4px rgba(0,0,0,.3));
@@ -397,37 +400,10 @@
       <div class="build-tabs" id="buildTabs"></div>
 
       <div class="build-tab-panel active" id="tabEquipment">
-        <p class="hint" style="margin-top:0;">Pick a tier for each part, then drag it from the palette onto the plot to place it — tap a placed item to pull it back out. What's on the plot is the actual build, not a preview of it.</p>
-        <div class="panel config-panel">
-          <p class="config-title">Solar</p>
-          <div class="tier-group" id="tierSolar"></div>
-        </div>
-        <div class="panel config-panel">
-          <p class="config-title">Battery</p>
-          <div class="tier-group" id="tierBattery"></div>
-        </div>
-        <div class="panel config-panel">
-          <p class="config-title">Robots</p>
-          <div class="tier-group" id="tierRobot"></div>
-        </div>
-
         <div class="panel config-panel" id="sandboxPanel">
-          <p class="config-title">Farm layout <span class="claimed-tag">place gear · wire solar→battery · draw rows · robots follow the rows</span></p>
-          <div class="sandbox-toolbar">
-            <button type="button" class="toolbar-btn" id="robotsGoBtn" onclick="toggleRobotsGo()">Robots: Go</button>
-            <button type="button" class="toolbar-btn primary" id="simulateBtn" onclick="runSimulatePlayback()">Simulate</button>
-            <button type="button" class="toolbar-btn" onclick="printFarmSpec()">Print Farm Spec</button>
-          </div>
-          <div class="sandbox-tool-bar">
-            <button type="button" class="sandbox-tool active" data-tool="place" onclick="setSandboxTool('place')">Place / Move</button>
-            <button type="button" class="sandbox-tool" data-tool="wire" onclick="setSandboxTool('wire')">Wire (solar → battery)</button>
-            <button type="button" class="sandbox-tool" data-tool="row" onclick="setSandboxTool('row')">Draw row</button>
-          </div>
-          <div class="sandbox-palette" id="sandboxPalette"></div>
+          <p class="config-title">Your farm <span class="claimed-tag">choose what to build — the farm lays itself out</span></p>
           <div class="sandbox-wrap">
             <svg id="sandboxCanvas" viewBox="0 0 760 480" preserveAspectRatio="xMidYMid meet"></svg>
-            <div class="sandbox-zoom"></div>
-            <div class="sandbox-connect-hint" id="sandboxConnectHint"></div>
             <div class="sim-indicator" id="simIndicator">
               <span class="sim-weather-icon" id="simWeatherIcon">&#9728;</span>
               <span id="simDayLabel">Day 1</span>
@@ -435,11 +411,12 @@
               <span id="simBatteryPct">50%</span>
             </div>
           </div>
-          <p class="hint" id="sandboxCounts" style="margin-top:8px;"></p>
-          <div class="robot-job-picker" id="robotJobPicker">
-            <p class="rjp-title" id="rjpTitle">Robot job</p>
-            <div class="rjp-row" id="rjpButtons"></div>
+          <div class="farm-controls" id="farmControls"></div>
+          <div class="sandbox-toolbar" style="margin-top:12px;">
+            <button type="button" class="toolbar-btn primary" id="simulateBtn" onclick="runSimulatePlayback()">Simulate</button>
+            <button type="button" class="toolbar-btn" onclick="printFarmSpec()">Print Farm Spec</button>
           </div>
+          <p class="hint" id="sandboxCounts" style="margin-top:8px;"></p>
         </div>
 
         <div class="panel config-panel" id="fertilizerPanel" style="display:none;">
@@ -573,8 +550,8 @@ const BATTERY_SPEC = { capacity_kwh: 60.0, round_trip_eff: 0.90, max_charge_kw: 
 const SIM_DAYS = 10;
 const SEED = 1;
 const CONFIG = {
-  solarM2: 100, batteryKwh: 60, usableBatteryKwh: 0, robots: 1,
-  solarTier: "standard", batteryTier: "nmc", robotTier: "basic",
+  solarM2: 100, batteryKwh: 60, robots: 1,
+  robotTier: "basic",
   fertilizerChoice: "import", waterChoice: "haul",
 };
 
@@ -607,7 +584,8 @@ function batteryCalendarRate(calendarLifeYears) {
   return 1.0 / (calendarLifeYears * HOURS_PER_YEAR);
 }
 function batteryDutyRate(bInKwh, bOutKwh, capacityKwh, cycleLife) {
-  const equivalentFullCycles = (bInKwh + bOutKwh) / (2.0 * capacityKwh);
+  const safeCapacity = capacityKwh > 0 ? capacityKwh : 1e-6; // guard: 0 connected batteries is valid, not a crash
+  const equivalentFullCycles = (bInKwh + bOutKwh) / (2.0 * safeCapacity);
   return equivalentFullCycles / cycleLife;
 }
 
@@ -876,30 +854,18 @@ function countTag(x, y, text) {
 // ============================================================
 function solarTopIcon(x, y, scale) {
   return `<g transform="translate(${x},${y}) scale(${scale})">
-    <rect x="-13" y="-9" width="26" height="18" rx="2" fill="#2a4a2a"/>
-    <line x1="-4.3" y1="-9" x2="-4.3" y2="9" stroke="#4a7a3a" stroke-width="1.2"/>
-    <line x1="4.3" y1="-9" x2="4.3" y2="9" stroke="#4a7a3a" stroke-width="1.2"/>
-    <rect x="-11" y="-7" width="22" height="5" rx="0.5" fill="#c9a227" opacity="0.7"/>
+    <rect x="-13" y="-9" width="26" height="18" rx="2" fill="#1f3b52"/>
+    <line x1="-4.3" y1="-9" x2="-4.3" y2="9" stroke="#3a5f7d" stroke-width="1.2"/>
+    <line x1="4.3" y1="-9" x2="4.3" y2="9" stroke="#3a5f7d" stroke-width="1.2"/>
   </g>`;
 }
-function batteryTopIcon(x, y, scale, connected) {
-  const body = connected ? "#3a6a4a" : "#5a5a4a";
-  const bolt = connected ? "#e8c84a" : "#888";
+function batteryTopIcon(x, y, scale) {
   return `<g transform="translate(${x},${y}) scale(${scale})">
-    <rect x="-13" y="-13" width="26" height="26" rx="4" fill="${body}"/>
-    <path d="M2,-6 L-5,3 L-1,3 L-3,10 L7,-1 L1,-1 Z" fill="${bolt}"/>
+    <rect x="-13" y="-13" width="26" height="26" rx="4" fill="#2b6f8f"/>
+    <path d="M2,-6 L-5,3 L-1,3 L-3,10 L7,-1 L1,-1 Z" fill="#f2b705"/>
   </g>`;
 }
-function robotTopIcon(x, y, scale, delay, job) {
-  // Seed drone gets a slightly different silhouette (elongated, "flying")
-  if (job === "seed") {
-    return `<g transform="translate(${x},${y}) scale(${scale})">
-      <ellipse rx="11" ry="5" fill="#3a5a3a"/>
-      <circle r="3.2" fill="#8fe3d6" class="bot-blink" style="animation-delay:${delay}s"/>
-      <line x1="-14" y1="0" x2="-8" y2="0" stroke="#5a8a4a" stroke-width="1.5"/>
-      <line x1="8" y1="0" x2="14" y2="0" stroke="#5a8a4a" stroke-width="1.5"/>
-    </g>`;
-  }
+function robotTopIcon(x, y, scale, delay) {
   return `<g transform="translate(${x},${y}) scale(${scale})">
     <circle r="8" fill="#3c4a44"/>
     <circle class="bot-blink" r="3.4" fill="#8fe3d6" style="animation-delay:${delay}s"/>
@@ -918,47 +884,271 @@ const BATTERY_MODULE_KWH = 10;
 const SANDBOX_CAPS = { solar: 10, battery: 15, robot: 6 };
 const SANDBOX_LABEL = { solar: "Solar", battery: "Battery", robot: "Robot" };
 const SANDBOX_EMOJI = { solar: "☀", battery: "🔋", robot: "🤖" };
-// Fixed plot — no free pan. World coords map 1:1 to the viewBox.
+// the plot itself — bigger than the old 400x300 so there's real room to lay
+// out a build and pan/zoom around it, not just nudge icons in a strip
 const SANDBOX_W = 760;
 const SANDBOX_H = 480;
 let sandboxItems = [];
-let sandboxWires = [];   // { id, fromId (solar), toId (battery) }
-let sandboxRows = [];    // { id, points: [{x,y}, ...] } user-drawn crop rows
 let sandboxNextId = 1;
-let sandboxView = { x: 0, y: 0, scale: 1 }; // fixed
 let sandboxDrag = null;
-let sandboxTool = "place"; // "place" | "wire" | "row"
-let wireFromId = null;     // solar id when drawing a wire
+// which palette tool (if any) is "armed" for tap-to-place: null | "solar" | "battery" | "robot"
+let sandboxArmedTool = null;
+// Rows the user has drawn (click-to-lay-path) and solar<->battery wiring —
+// both persist independently of sandboxItems, referenced by id.
+let sandboxRows = [];           // [{ id, points: [{x,y}, ...] }]
+let sandboxConnections = [];    // [{ solarId, batteryId }, ...]
+let sandboxMode = "place";      // "place" | "row" | "connect"
+let rowDraft = null;            // { points: [{x,y}, ...] } while actively drawing a row
+let connectDraft = null;        // { type: "solar"|"battery", id } — first endpoint tapped
+
+// ---------- the farm lays itself out: you decide HOW MANY and WHAT TIER,
+// the farm puts everything where a real one would — panels on the array pad,
+// batteries on the bank pad, conduit to the charge dock, robots on the crop
+// rows. No hand placement, no dragging, no wiring by hand: every battery is
+// fed by the array and every robot charges at the dock, always. ----------
+const FARM = { solarTier: "budget", batteryTier: "lead" };
+const FARM_GEO = {
+  array: { x: 22, y: 40, colW: 94, rowH: 34, cols: 2 },
+  bank:  { x: 26, y: 262, colW: 36, rowH: 30, cols: 5 },
+  field: { x: 250, y: 14, w: 498, h: 452 },
+  rows: 8,
+};
+function farmRowY(k) {
+  const f = FARM_GEO.field;
+  return f.y + 32 + k * ((f.h - 64) / (FARM_GEO.rows - 1));
+}
+function layoutFarm(counts) {
+  const G = FARM_GEO;
+  sandboxItems = []; sandboxRows = []; sandboxConnections = [];
+  sandboxMode = "place"; rowDraft = null; connectDraft = null; sandboxNextId = 1;
+  for (let i = 0; i < counts.solar; i++) {
+    const c = i % G.array.cols, r = Math.floor(i / G.array.cols);
+    sandboxItems.push({ id: sandboxNextId++, type: "solar", tier: FARM.solarTier,
+      x: G.array.x + c * G.array.colW + 43, y: G.array.y + r * G.array.rowH + 14 });
+  }
+  for (let i = 0; i < counts.battery; i++) {
+    const c = i % G.bank.cols, r = Math.floor(i / G.bank.cols);
+    sandboxItems.push({ id: sandboxNextId++, type: "battery", tier: FARM.batteryTier,
+      x: G.bank.x + c * G.bank.colW + 15, y: G.bank.y + r * G.bank.rowH + 12 });
+  }
+  for (let k = 0; k < G.rows; k++) {
+    const y = farmRowY(k);
+    sandboxRows.push({ id: sandboxNextId++, points: [{ x: G.field.x + 22, y }, { x: G.field.x + G.field.w - 22, y }] });
+  }
+  const n = counts.robot;
+  for (let i = 0; i < n; i++) {
+    const k = n === 1 ? 3 : Math.round(i * (G.rows - 1) / (n - 1));
+    const row = sandboxRows[k];
+    sandboxItems.push({ id: sandboxNextId++, type: "robot", job: DEFAULT_ROBOT_JOB, rowId: row.id, batteryId: null,
+      x: row.points[0].x, y: row.points[0].y });
+  }
+  const firstSolar = sandboxItems.find(i => i.type === "solar");
+  const firstBattery = sandboxItems.find(i => i.type === "battery");
+  if (firstSolar) sandboxItems.filter(i => i.type === "battery").forEach(b => sandboxConnections.push({ solarId: firstSolar.id, batteryId: b.id }));
+  if (firstBattery) sandboxItems.filter(i => i.type === "robot").forEach(r => { r.batteryId = firstBattery.id; });
+}
+function farmCounts() {
+  return { solar: sandboxCount("solar"), battery: sandboxCount("battery"), robot: sandboxCount("robot") };
+}
+function farmStep(type, delta) {
+  const counts = farmCounts();
+  counts[type] = clamp(counts[type] + delta, 1, SANDBOX_CAPS[type]);
+  layoutFarm(counts);
+  renderSandbox();
+  onSandboxChange();
+}
+function farmSetTier(type, key) {
+  if (type === "robot") CONFIG.robotTier = key;
+  else {
+    FARM[type + "Tier"] = key;
+    sandboxItems.filter(i => i.type === type).forEach(i => { i.tier = key; });
+  }
+  renderSandbox();
+  onSandboxChange();
+}
+function renderFarmControls() {
+  const el = document.getElementById("farmControls");
+  if (!el) return;
+  const c = farmCounts();
+  const btn = (active, onclick, name, sub) =>
+    `<button type="button" class="tier-btn ${active ? "active" : ""}" onclick="${onclick}">${name}<span class="sub">${sub}</span></button>`;
+  const card = (type, title, sub, tiers) => `
+    <div class="farm-card">
+      <div class="farm-card-head">
+        <div><div class="farm-card-title">${title}</div><div class="farm-card-sub">${sub}</div></div>
+        <div class="stepper">
+          <button type="button" aria-label="Fewer" onclick="farmStep('${type}',-1)" ${c[type] <= 1 ? "disabled" : ""}>&minus;</button>
+          <span class="n">${c[type]}</span>
+          <button type="button" aria-label="More" onclick="farmStep('${type}',1)" ${c[type] >= SANDBOX_CAPS[type] ? "disabled" : ""}>+</button>
+        </div>
+      </div>
+      <div class="tier-group">${tiers}</div>
+    </div>`;
+  el.innerHTML =
+    card("solar", "&#9728; Solar panels", `${c.solar * SOLAR_MODULE_M2} m&sup2; on the array`,
+      SOLAR_TIERS.map(t => btn(t.key === FARM.solarTier, `farmSetTier('solar','${t.key}')`, t.name,
+        `$${t.cost_per_m2}/m&sup2; &middot; ${Math.round(t.efficiency * 100)}%`)).join("")) +
+    card("battery", "&#128267; Battery bank", `${c.battery * BATTERY_MODULE_KWH} kWh stored`,
+      BATTERY_TIERS.map(t => btn(t.key === FARM.batteryTier, `farmSetTier('battery','${t.key}')`, t.name,
+        `$${t.cost_per_kwh}/kWh &middot; ${t.calendar_life_years} yr`)).join("")) +
+    card("robot", "&#128668; Field robots", `${c.robot} working the rows`,
+      ROBOT_TIERS.map(t => btn(t.key === CONFIG.robotTier, `farmSetTier('robot','${t.key}')`, t.name,
+        `${t.load_kw_each} kW &middot; $${t.cost_each.toLocaleString()}`)).join(""));
+}
 
 function seedSandboxItems() {
+  layoutFarm({
+    solar: clamp(Math.round(CONFIG.solarM2 / SOLAR_MODULE_M2), 1, SANDBOX_CAPS.solar),
+    battery: clamp(Math.round(CONFIG.batteryKwh / BATTERY_MODULE_KWH), 1, SANDBOX_CAPS.battery),
+    robot: clamp(CONFIG.robots, 1, SANDBOX_CAPS.robot),
+  });
+}
+// ---------- Quick Setup: one-click preset "skids" that populate the sandbox
+// the same way seedSandboxItems() does, using existing tiers/module math and
+// the existing Connect wiring model — a convenience layer on top of the
+// sandbox, not a second placement system. Counts are illustrative, sized to
+// stay inside SANDBOX_CAPS; "balanced" mirrors a build already known to clear
+// the win line in the sandbox's own economics, it isn't pulled from anywhere else.
+const PRESET_BUNDLES = [
+  { key: "starter",  label: "Starter Bundle",  blurb: "Budget tier, modest counts",
+    solarTier: "budget", batteryTier: "lead", robotTier: "basic",
+    solarCount: 3, batteryCount: 3, robotCount: 1 },
+  { key: "balanced", label: "Balanced Bundle", blurb: "A build that pencils out",
+    solarTier: "budget", batteryTier: "lead", robotTier: "basic",
+    solarCount: 6, batteryCount: 6, robotCount: 1 },
+  { key: "max",      label: "Max Bundle",      blurb: "High tier, bigger counts",
+    solarTier: "high", batteryTier: "lfp", robotTier: "multi",
+    solarCount: 8, batteryCount: 10, robotCount: 3 },
+];
+
+function renderPresetBundles() {
+  const el = document.getElementById("presetBundleRow");
+  if (!el) return;
+  el.innerHTML = PRESET_BUNDLES.map(p =>
+    `<button type="button" class="toolbar-btn" onclick="applyPresetBundle('${p.key}')">${p.label}<br><span class="sub">${p.blurb}</span></button>`
+  ).join("");
+}
+
+function applyPresetBundle(key) {
+  const preset = PRESET_BUNDLES.find(p => p.key === key);
+  if (!preset) return;
+  const hasLayout = sandboxItems.length > 0;
+  if (hasLayout && !confirm("Quick Setup replaces your current farm layout with the \"" + preset.label + "\" preset. Continue?")) return;
+
+  CONFIG.robotTier = preset.robotTier;
+
   sandboxItems = [];
-  sandboxWires = [];
   sandboxRows = [];
+  sandboxConnections = [];
+  sandboxMode = "place";
+  rowDraft = null;
+  connectDraft = null;
   sandboxNextId = 1;
-  wireFromId = null;
-  const solarCount = Math.max(1, Math.round(CONFIG.solarM2 / SOLAR_MODULE_M2));
-  const batteryCount = Math.max(1, Math.round(CONFIG.batteryKwh / BATTERY_MODULE_KWH));
-  const robotCount = Math.max(1, CONFIG.robots);
-  sandboxPlaceRow("solar", solarCount, 50, 50);
-  sandboxPlaceRow("battery", batteryCount, 50, 180);
-  sandboxPlaceRow("robot", robotCount, 50, 320);
-  // seed a couple of default crop rows so robots have a path immediately
-  for (let i = 0; i < 4; i++) {
-    const y = 380 + i * 22;
-    sandboxRows.push({
-      id: sandboxNextId++,
-      points: [{ x: 40, y }, { x: SANDBOX_W - 40, y }]
+  sandboxPlaceRow("solar", preset.solarCount, 50, 60);
+  sandboxPlaceRow("battery", preset.batteryCount, 50, 220);
+  sandboxPlaceRow("robot", preset.robotCount, 50, 390);
+  // Preset tier is per-item, same as any other placement — every unit this
+  // bundle drops starts at (or is auto-cycled to) the preset's target tier.
+  sandboxItems.filter(i => i.type === "solar").forEach(i => { i.tier = preset.solarTier; });
+  sandboxItems.filter(i => i.type === "battery").forEach(i => { i.tier = preset.batteryTier; });
+
+  // Same default wiring as a fresh build: every battery off the first solar
+  // item, every robot recharging off the first battery item.
+  const firstSolar = sandboxItems.find(i => i.type === "solar");
+  const firstBattery = sandboxItems.find(i => i.type === "battery");
+  if (firstSolar) {
+    sandboxItems.filter(i => i.type === "battery").forEach(b => {
+      sandboxConnections.push({ solarId: firstSolar.id, batteryId: b.id });
     });
   }
+  if (firstBattery) {
+    sandboxItems.filter(i => i.type === "robot").forEach(r => { r.batteryId = firstBattery.id; });
+  }
+
+  renderTiers();
+  renderSandbox();
+  onSandboxChange();
 }
+
 function sandboxPlaceRow(type, count, startX, y) {
   for (let i = 0; i < count; i++) {
     const item = { id: sandboxNextId++, type, x: startX + (i % 10) * 66, y: y + Math.floor(i / 10) * 56 };
-    if (type === "robot") item.job = DEFAULT_ROBOT_JOB;
+    if (type === "robot") { item.job = DEFAULT_ROBOT_JOB; item.rowId = null; item.batteryId = null; }
+    if (type === "solar") item.tier = SOLAR_TIERS[0].key;
+    if (type === "battery") item.tier = BATTERY_TIERS[0].key;
     sandboxItems.push(item);
   }
 }
 function sandboxCount(type) { return sandboxItems.filter(i => i.type === type).length; }
+
+// ---------- power connections: which batteries are wired to a solar item,
+// and which robots have a working recharge battery. Kept as a simple array
+// of {solarId, batteryId} pairs rather than touching simulateScene() itself —
+// the connection graph only decides what feeds the aggregate numbers below. ----------
+function batteryConnected(batteryId) {
+  return sandboxConnections.some(c => c.batteryId === batteryId);
+}
+function connectedBatteryKwh() {
+  return sandboxItems.filter(i => i.type === "battery" && batteryConnected(i.id)).length * BATTERY_MODULE_KWH;
+}
+// A robot is "powered" only if it has an assigned recharge battery AND that
+// battery is itself wired to at least one solar item. No assignment, a
+// removed battery, or an unconnected battery all mean unpowered.
+function robotPowered(item) {
+  if (!item || !item.batteryId) return false;
+  const batt = sandboxItems.find(i => i.id === item.batteryId && i.type === "battery");
+  return !!batt && batteryConnected(batt.id);
+}
+function removeSandboxItem(id) {
+  const it = sandboxItems.find(i => i.id === id);
+  if (!it) return;
+  sandboxItems = sandboxItems.filter(i => i.id !== id);
+  if (it.type === "solar" || it.type === "battery") {
+    sandboxConnections = sandboxConnections.filter(c => c.solarId !== id && c.batteryId !== id);
+  }
+  if (it.type === "battery") {
+    sandboxItems.forEach(r => { if (r.type === "robot" && r.batteryId === id) r.batteryId = null; });
+  }
+  if (connectDraft && connectDraft.id === id) connectDraft = null;
+}
+function removeSandboxRow(rowId) {
+  sandboxRows = sandboxRows.filter(r => r.id !== rowId);
+  sandboxItems.forEach(it => { if (it.type === "robot" && it.rowId === rowId) it.rowId = null; });
+}
+
+// ---------- row-path geometry: a drawn row is an ordered polyline; a robot
+// bound to it walks back and forth along the exact path (0..0.5 forward,
+// 0.5..1 backward), used by both the idle loop and Simulate playback. ----------
+function rowPathLength(row) {
+  let len = 0;
+  for (let i = 1; i < row.points.length; i++) {
+    len += Math.hypot(row.points[i].x - row.points[i - 1].x, row.points[i].y - row.points[i - 1].y);
+  }
+  return len;
+}
+function pointAlongRow(row, dist) {
+  const pts = row.points;
+  if (pts.length === 0) return { x: 0, y: 0 };
+  if (pts.length === 1) return { x: pts[0].x, y: pts[0].y };
+  let remaining = Math.max(0, dist);
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i - 1], b = pts[i];
+    const segLen = Math.hypot(b.x - a.x, b.y - a.y);
+    if (remaining <= segLen || i === pts.length - 1) {
+      const t = segLen > 0 ? Math.max(0, Math.min(1, remaining / segLen)) : 0;
+      return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
+    }
+    remaining -= segLen;
+  }
+  return { x: pts[pts.length - 1].x, y: pts[pts.length - 1].y };
+}
+function robotRowPosition(row, tCycle) {
+  const len = rowPathLength(row);
+  if (len <= 0) return pointAlongRow(row, 0);
+  const c = ((tCycle % 1) + 1) % 1; // normalize into [0,1)
+  const frac = c < 0.5 ? c * 2 : 1 - (c - 0.5) * 2;
+  return pointAlongRow(row, frac * len);
+}
 
 // ---------- robot jobs: per-unit load/cost lookup, feeding totalLoadKw() and
 // drawMoney() so a job assignment is a real economic effect, not decoration ----------
@@ -968,11 +1158,19 @@ function robotJobFor(item) {
 }
 // robots: fallback unit count used before the sandbox has been seeded (e.g. the
 // crop-selection preview) or if somehow no robot items exist yet
+// A robot with no reachable connected+charged battery isn't out working, so
+// its load doesn't happen either — simplest correct model without touching
+// simulateScene(): an unpowered robot's load_kw_each is excluded from the
+// aggregate load fed into the ledger, rather than applying a penalty
+// multiplier on top of a load that wouldn't really be drawn.
 function robotLoadKwTotal(robots, robotTierKey) {
   const tier = ROBOT_TIERS.find(t => t.key === robotTierKey) || ROBOT_TIERS[0];
   const items = robotItems();
   if (items.length === 0) return Math.max(1, robots || 1) * tier.load_kw_each;
-  return items.reduce((s, it) => s + Math.max(0.05, tier.load_kw_each + robotJobFor(it).load_kw_delta), 0);
+  return items.reduce((s, it) => {
+    if (!robotPowered(it)) return s;
+    return s + Math.max(0.05, tier.load_kw_each + robotJobFor(it).load_kw_delta);
+  }, 0);
 }
 function robotCostTotal(robots, robotTierKey) {
   const tier = ROBOT_TIERS.find(t => t.key === robotTierKey) || ROBOT_TIERS[0];
@@ -990,84 +1188,133 @@ function robotJobBreakdown() {
   return parts.length ? parts.join(", ") : `${CONFIG.robots}× (job unassigned)`;
 }
 
-// Connected batteries only: a battery counts toward usable capacity iff at
-// least one wire runs from a solar module into it. Unconnected packs still
-// cost money and sit on the plot, but they are out of the charge math —
-// robots can only draw from the wired bank.
-function connectedBatteryIds() {
-  const ids = new Set();
-  sandboxWires.forEach(w => ids.add(w.toId));
-  return ids;
-}
-function usableBatteryCount() {
-  const connected = connectedBatteryIds();
-  return Math.max(0, sandboxItems.filter(i => i.type === "battery" && connected.has(i.id)).length);
-}
+// module counts -> CONFIG, the same math the sliders used to drive directly
 function syncConfigFromSandbox() {
   CONFIG.solarM2 = Math.max(SOLAR_MODULE_M2, sandboxCount("solar") * SOLAR_MODULE_M2);
-  // total installed still reflects all packs (cost accounting), but the
-  // simulation capacity is the connected subset only
-  const totalPacks = Math.max(1, sandboxCount("battery"));
-  const usablePacks = Math.max(0, usableBatteryCount());
-  CONFIG.batteryKwh = Math.max(BATTERY_MODULE_KWH, totalPacks * BATTERY_MODULE_KWH);
-  CONFIG.usableBatteryKwh = usablePacks * BATTERY_MODULE_KWH; // may be 0
+  // Only CONNECTED batteries count toward usable capacity — an unconnected
+  // battery contributes 0, which can legitimately drive this to 0.
+  CONFIG.batteryKwh = connectedBatteryKwh();
   CONFIG.robots = Math.max(1, sandboxCount("robot"));
 }
 
+// ---------- per-item tier: Solar and Battery items now carry their own tier
+// (it.tier), cycled by tapping the placed item rather than picked once from a
+// global tier-button row. Robots keep their existing separate tier picker. ----------
+function itemTierArr(type) { return type === "solar" ? SOLAR_TIERS : BATTERY_TIERS; }
+function itemTier(it) {
+  const arr = itemTierArr(it.type);
+  return arr.find(t => t.key === it.tier) || arr[0];
+}
+function cycleItemTier(it) {
+  const arr = itemTierArr(it.type);
+  const idx = arr.findIndex(t => t.key === it.tier);
+  it.tier = arr[(idx + 1) % arr.length].key;
+}
+// base tier: muted grey, top tier: gold, anything in between: blue — same
+// "cheap/mid/premium" color language the rest of the page already uses (gold
+// for accents, blue-grey for the equipment icons themselves)
+function tierBadgeColor(idx, len) {
+  if (idx <= 0) return "#7d8f82";
+  if (idx >= len - 1) return "#f2b705";
+  return "#3a8fd1";
+}
+function tierBadgeMarkup(it) {
+  const arr = itemTierArr(it.type);
+  const idx = Math.max(0, arr.findIndex(t => t.key === it.tier));
+  const col = tierBadgeColor(idx, arr.length);
+  return `<g transform="translate(11,-11)">
+    <circle r="7.5" fill="${col}" stroke="#1c2420" stroke-width="1.2"/>
+    <text y="3" font-size="8.5" font-weight="700" fill="#fff" text-anchor="middle" font-family="Inter, sans-serif">${idx + 1}</text>
+  </g>`;
+}
+// solar/battery aggregate economics: each placed item pencils out at its OWN
+// tier (a farm can run a mix of budget and premium panels at once), summed
+// here into the single blended object the rest of the ledger math already
+// expects in place of one global CONFIG.solarTier/batteryTier choice. Battery
+// aggregates only over CONNECTED batteries, matching connectedBatteryKwh()'s
+// existing "only wired capacity counts" rule.
+function solarAggregate() {
+  const items = sandboxItems.filter(i => i.type === "solar");
+  const base = SOLAR_TIERS[0];
+  if (!items.length) return { key: base.key, name: base.name, efficiency: base.efficiency, cost_per_m2: base.cost_per_m2, capex: 0, upkeep: 0 };
+  let capex = 0, upkeep = 0, effArea = 0;
+  const totalArea = items.length * SOLAR_MODULE_M2;
+  const keys = new Set();
+  items.forEach(it => {
+    const t = itemTier(it);
+    keys.add(t.key);
+    const itemCapex = SOLAR_MODULE_M2 * t.cost_per_m2;
+    capex += itemCapex;
+    upkeep += itemCapex * t.upkeep_pct;
+    effArea += SOLAR_MODULE_M2 * t.efficiency;
+  });
+  const key = keys.size === 1 ? [...keys][0] : "mixed";
+  const name = keys.size === 1 ? SOLAR_TIERS.find(t => t.key === key).name : "Mixed tiers";
+  return { key, name, efficiency: effArea / totalArea, cost_per_m2: capex / totalArea, capex, upkeep };
+}
+function batteryAggregate() {
+  const items = sandboxItems.filter(i => i.type === "battery" && batteryConnected(i.id));
+  const base = BATTERY_TIERS[0];
+  if (!items.length) return { key: base.key, name: base.name, cycle_life: base.cycle_life, calendar_life_years: base.calendar_life_years, cost_per_kwh: base.cost_per_kwh, capex: 0, upkeep: 0 };
+  let capex = 0, upkeep = 0, cycleW = 0, calW = 0;
+  const totalKwh = items.length * BATTERY_MODULE_KWH;
+  const keys = new Set();
+  items.forEach(it => {
+    const t = itemTier(it);
+    keys.add(t.key);
+    const itemCapex = BATTERY_MODULE_KWH * t.cost_per_kwh;
+    capex += itemCapex;
+    upkeep += itemCapex * t.upkeep_pct;
+    cycleW += BATTERY_MODULE_KWH * t.cycle_life;
+    calW += BATTERY_MODULE_KWH * t.calendar_life_years;
+  });
+  const key = keys.size === 1 ? [...keys][0] : "mixed";
+  const name = keys.size === 1 ? BATTERY_TIERS.find(t => t.key === key).name : "Mixed tiers";
+  return { key, name, cycle_life: cycleW / totalKwh, calendar_life_years: calW / totalKwh, cost_per_kwh: capex / totalKwh, capex, upkeep };
+}
+
 function sandboxItemMarkup(it) {
-  const connected = it.type === "battery" && connectedBatteryIds().has(it.id);
-  const job = it.type === "robot" ? robotJobFor(it).key : null;
   const icon = it.type === "solar" ? solarTopIcon(0, 0, 1.35)
-    : it.type === "battery" ? batteryTopIcon(0, 0, 1.1, connected)
-    : robotTopIcon(0, 0, 1.1, (it.id % 5) * 0.2, job);
+    : it.type === "battery" ? batteryTopIcon(0, 0, 1.1)
+    : robotTopIcon(0, 0, 1.1, (it.id % 5) * 0.2);
+  // robots get an inner animatable group: ambient idle motion (Robots: Go) and
+  // simulate-playback work motion both just set this group's transform each
+  // frame/tick, leaving the outer group's real x/y (the actual placement) alone
   const inner = it.type === "robot"
     ? `<g id="robotAnim-${it.id}" transform="translate(0,0)">${icon}</g>`
     : icon;
-  const ring = (it.type === "solar" && wireFromId === it.id)
-    ? `<circle r="20" fill="none" stroke="#c9a227" stroke-width="2" opacity="0.9"/>`
-    : "";
-  return `<g class="sandbox-item" data-id="${it.id}" data-type="${it.type}" transform="translate(${it.x},${it.y})" style="cursor:pointer;">
+  const unpoweredCls = (it.type === "robot" && !robotPowered(it)) ? " sandbox-unpowered" : "";
+  const selected = (connectDraft && connectDraft.id === it.id)
+    ? `<circle r="20" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-dasharray="3,2"/>` : "";
+  const badge = (it.type === "solar" || it.type === "battery") ? tierBadgeMarkup(it) : "";
+  const cursor = sandboxMode === "place" ? "grab" : "pointer";
+  return `<g class="sandbox-item${unpoweredCls}" data-id="${it.id}" data-type="${it.type}" transform="translate(${it.x},${it.y})" style="cursor:${cursor};">
     <circle r="17" fill="#000" opacity="0.001"/>
-    ${ring}
+    ${selected}
     ${inner}
+    ${badge}
   </g>`;
 }
-function sandboxWireMarkup(w) {
-  const from = sandboxItems.find(i => i.id === w.fromId);
-  const to = sandboxItems.find(i => i.id === w.toId);
-  if (!from || !to) return "";
-  // simple orthogonal-ish stub: mid-point jog for readability
-  const mx = (from.x + to.x) / 2;
-  return `<path class="sandbox-wire flow" d="M${from.x},${from.y} L${mx},${from.y} L${mx},${to.y} L${to.x},${to.y}"/>`;
-}
-function sandboxUserRowMarkup(r) {
-  if (!r.points || r.points.length < 2) return "";
-  const d = r.points.map((p, i) => (i === 0 ? "M" : "L") + p.x + "," + p.y).join(" ");
-  return `<path class="sandbox-user-row" d="${d}"/>`;
-}
 
-function applySandboxTransform() {
-  // fixed canvas — identity transform
-  const g = document.getElementById("sandboxViewport");
-  if (g) g.setAttribute("transform", "translate(0,0) scale(1)");
-}
 function sandboxItemTransform(it) {
   const el = document.querySelector('#sandboxCanvas .sandbox-item[data-id="' + it.id + '"]');
   if (el) el.setAttribute("transform", `translate(${it.x},${it.y})`);
 }
-function setSandboxTool(tool) {
-  sandboxTool = tool;
-  wireFromId = null;
-  document.querySelectorAll(".sandbox-tool").forEach(b => {
-    b.classList.toggle("active", b.dataset.tool === tool);
+// keep wires visually attached while their solar/battery endpoint is dragged,
+// without a full re-render on every pointermove
+function updateWiresForItem(id) {
+  document.querySelectorAll('#sandboxCanvas .sandbox-wire').forEach(g => {
+    const sId = Number(g.dataset.solar), bId = Number(g.dataset.battery);
+    if (sId !== id && bId !== id) return;
+    const s = sandboxItems.find(i => i.id === sId);
+    const b = sandboxItems.find(i => i.id === bId);
+    if (!s || !b) return;
+    const line = g.querySelector("line");
+    const circles = g.querySelectorAll("circle");
+    if (line) { line.setAttribute("x1", s.x); line.setAttribute("y1", s.y); line.setAttribute("x2", b.x); line.setAttribute("y2", b.y); }
+    if (circles[0]) { circles[0].setAttribute("cx", s.x); circles[0].setAttribute("cy", s.y); }
+    if (circles[1]) { circles[1].setAttribute("cx", b.x); circles[1].setAttribute("cy", b.y); }
   });
-  const hint = document.getElementById("sandboxConnectHint");
-  if (hint) {
-    if (tool === "wire") { hint.textContent = "Tap a solar panel, then a battery to wire them"; hint.classList.add("show"); }
-    else if (tool === "row") { hint.textContent = "Drag across the plot to draw a crop row"; hint.classList.add("show"); }
-    else { hint.classList.remove("show"); }
-  }
-  renderSandbox();
 }
 
 // ---------- painterly field background — the plot's actual ground, not a
@@ -1077,12 +1324,14 @@ function setSandboxTool(tool) {
 // scattered translucent "brush daub" ellipses, with light drift and a
 // shimmer layer animated by CSS transform/opacity only — cheap enough to
 // run continuously without touching drag performance. ----------
+// Grounded in "what a real field looks like" per the farm-palette pass: greens
+// for planted crop area, browns for tilled soil/furrows, dominant over the sky
+// sliver — replacing the earlier, more abstract Monet-landscape blues/lavenders.
 const SANDBOX_PALETTES = {
-  // green-and-brown working-farm palette
-  field:      { sky1: "#d8e8c8", sky2: "#a8c47a", row1: "#5a8a3c", row2: "#3f6b2a", accent: "#c4a35a", glow: "#e8d48a" },
-  plateau:    { sky1: "#d4d8c0", sky2: "#a8a878", row1: "#7a7a48", row2: "#5a5a30", accent: "#b8a868", glow: "#e0d090" },
-  floodplain: { sky1: "#c8e0c8", sky2: "#7aaa78", row1: "#4a8a58", row2: "#2e6a40", accent: "#8ab8a0", glow: "#d8e8b0" },
-  island:     { sky1: "#c8e8d8", sky2: "#68b090", row1: "#3e8a58", row2: "#286a40", accent: "#d0c060", glow: "#e8e0a0" },
+  field:      { sky1: "#e8ecd6", sky2: "#cdd9a8", row1: "#6f9c3f", row2: "#5a3d22", accent: "#8a5a2b", glow: "#fff6c9" },
+  plateau:    { sky1: "#ece5cf", sky2: "#cdbd8f", row1: "#8a7b45", row2: "#5c4526", accent: "#b79a58", glow: "#fff0c2" },
+  floodplain: { sky1: "#dce6d0", sky2: "#a9c290", row1: "#3f7d4a", row2: "#2e2016", accent: "#5a3a22", glow: "#ffe9b8" },
+  island:     { sky1: "#e6efc9", sky2: "#bcd98d", row1: "#4f9a52", row2: "#c9a15c", accent: "#e0c07a", glow: "#fff2c4" },
 };
 
 function sandboxRowPaths(key, p, W, H) {
@@ -1177,44 +1426,181 @@ function sandboxFieldArt(key) {
     ${shimmer}`;
 }
 
+// alternating soil-brown / crop-green so multiple rows stay distinguishable
+function rowPathColor(idx) { return idx % 2 === 0 ? "#5c4326" : "#3f6d34"; }
+
+function renderRowsMarkup() {
+  let html = "";
+  sandboxRows.forEach((row, idx) => {
+    const pts = row.points.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+    const col = rowPathColor(idx);
+    html += `<polyline class="sandbox-row-path" data-row-id="${row.id}" points="${pts}" fill="none" stroke="${col}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/>`;
+    row.points.forEach(p => {
+      html += `<circle class="sandbox-row-dot" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3" fill="${col}" opacity="0.7"/>`;
+    });
+  });
+  if (rowDraft && rowDraft.points.length) {
+    const pts = rowDraft.points.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+    html += `<polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-dasharray="4,4" stroke-linecap="round"/>`;
+    rowDraft.points.forEach(p => { html += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5" fill="var(--accent)"/>`; });
+  }
+  return html;
+}
+
+function renderWiresMarkup() {
+  return sandboxConnections.map((c, idx) => {
+    const s = sandboxItems.find(i => i.id === c.solarId && i.type === "solar");
+    const b = sandboxItems.find(i => i.id === c.batteryId && i.type === "battery");
+    if (!s || !b) return "";
+    return `<g class="sandbox-wire" data-idx="${idx}" data-solar="${s.id}" data-battery="${b.id}">
+      <line x1="${s.x}" y1="${s.y}" x2="${b.x}" y2="${b.y}" stroke="#e8a318" stroke-width="2.5" stroke-dasharray="6,4" opacity="0.85"/>
+      <circle cx="${s.x}" cy="${s.y}" r="3" fill="#e8a318"/>
+      <circle cx="${b.x}" cy="${b.y}" r="3" fill="#e8a318"/>
+    </g>`;
+  }).join("");
+}
+
+// ---------- the farm picture: a top-down automated farm, drawn from the
+// build itself — every panel, battery cabinet and robot you see is one unit
+// actually counted in the ledger ----------
+const FARM_PALETTES = {
+  field:      { grass: "#8fb866", soil: "#7a5534", furrow: "#5e3f24", crop: "#3f8a3a", cropHi: "#7cc25e" },
+  plateau:    { grass: "#a9a66a", soil: "#8a6a44", furrow: "#6b5033", crop: "#6d8a3c", cropHi: "#a3b865" },
+  floodplain: { grass: "#6fa35a", soil: "#5a4028", furrow: "#3d2b1a", crop: "#2f7a3f", cropHi: "#5fb36a" },
+  island:     { grass: "#86b85c", soil: "#b08a57", furrow: "#8d6b40", crop: "#3f9148", cropHi: "#82c96a" },
+};
+const SOLAR_TIER_COLOR = { budget: "#51637a", standard: "#1f4e8c", high: "#132a52" };
+const BATTERY_TIER_COLOR = { lead: { body: "#8c9196", band: "#5d6368" }, nmc: { body: "#e7eaee", band: "#3a8fd1" }, lfp: { body: "#eef3ec", band: "#3f9a5a" } };
+const ROBOT_TIER_COLOR = { basic: "#f2b705", multi: "#2bb3a3" };
+
+function farmLabel(x, y, text) {
+  return `<text x="${x}" y="${y}" font-size="11" font-weight="700" fill="#fff" stroke="rgba(0,0,0,.5)" stroke-width="3" paint-order="stroke" font-family="Inter, system-ui, sans-serif">${text}</text>`;
+}
+function farmSolarMarkup(it) {
+  const col = SOLAR_TIER_COLOR[it.tier] || SOLAR_TIER_COLOR.standard;
+  const x = it.x - 43, y = it.y - 14;
+  let grid = "";
+  for (let i = 1; i < 8; i++) grid += `<line x1="${x + 2 + i * 10.25}" y1="${y + 2}" x2="${x + 2 + i * 10.25}" y2="${y + 26}" stroke="#9fb6d6" stroke-width="0.6" opacity="0.55"/>`;
+  return `<g class="sandbox-item" data-id="${it.id}" data-type="solar">
+    <rect x="${x + 2}" y="${y + 3}" width="86" height="28" rx="2" fill="#000" opacity="0.18"/>
+    <rect x="${x}" y="${y}" width="86" height="28" rx="2" fill="#d6dadd"/>
+    <rect x="${x + 2}" y="${y + 2}" width="82" height="24" rx="1" fill="${col}"/>
+    ${grid}
+    <line x1="${x + 2}" y1="${y + 14}" x2="${x + 84}" y2="${y + 14}" stroke="#9fb6d6" stroke-width="0.6" opacity="0.55"/>
+    <line x1="${x + 8}" y1="${y + 24}" x2="${x + 30}" y2="${y + 4}" stroke="#fff" stroke-width="3" opacity="0.14"/>
+  </g>`;
+}
+function farmBatteryMarkup(it) {
+  const col = BATTERY_TIER_COLOR[it.tier] || BATTERY_TIER_COLOR.lead;
+  const x = it.x - 15, y = it.y - 12;
+  return `<g class="sandbox-item" data-id="${it.id}" data-type="battery">
+    <rect x="${x + 2}" y="${y + 3}" width="30" height="24" rx="3" fill="#000" opacity="0.2"/>
+    <rect x="${x}" y="${y}" width="30" height="24" rx="3" fill="${col.body}" stroke="#4a4f52" stroke-width="1"/>
+    <rect x="${x}" y="${y + 16}" width="30" height="4" fill="${col.band}"/>
+    <path d="M${x + 16} ${y + 3} l-5 7 h4 l-2 5 l6 -8 h-4 z" fill="#e8a318"/>
+    <circle cx="${x + 25}" cy="${y + 5}" r="1.8" fill="#3fd17a"/>
+  </g>`;
+}
+function farmRobotMarkup(it) {
+  const body = ROBOT_TIER_COLOR[CONFIG.robotTier] || ROBOT_TIER_COLOR.basic;
+  return `<g class="sandbox-item" data-id="${it.id}" data-type="robot" transform="translate(${it.x},${it.y})">
+    <g id="robotAnim-${it.id}" transform="translate(0,0)">
+      <ellipse cx="1" cy="3" rx="19" ry="11" fill="#000" opacity="0.18"/>
+      <rect x="-22" y="-11" width="4" height="22" rx="1" fill="#555"/>
+      <rect x="-13" y="-14" width="9" height="5" rx="1.5" fill="#222"/>
+      <rect x="5" y="-14" width="9" height="5" rx="1.5" fill="#222"/>
+      <rect x="-13" y="9" width="9" height="5" rx="1.5" fill="#222"/>
+      <rect x="5" y="9" width="9" height="5" rx="1.5" fill="#222"/>
+      <rect x="-16" y="-10" width="32" height="20" rx="5" fill="${body}" stroke="#3a3a3a" stroke-width="1.2"/>
+      <rect x="-8" y="-7" width="14" height="14" rx="2" fill="#1f4e8c" opacity="0.9"/>
+      <circle cx="13" cy="0" r="2.2" fill="#3fd17a"/>
+    </g>
+  </g>`;
+}
+function farmSceneMarkup(key) {
+  const p = FARM_PALETTES[key] || FARM_PALETTES.field;
+  const W = SANDBOX_W, H = SANDBOX_H, f = FARM_GEO.field;
+  let flavor = "";
+  if (key === "island") {
+    flavor = `<rect x="3" y="3" width="${W - 6}" height="${H - 6}" rx="16" fill="none" stroke="#5fb3c9" stroke-width="6"/>
+      <rect x="7" y="7" width="${W - 14}" height="${H - 14}" rx="13" fill="none" stroke="#e3cf9c" stroke-width="4"/>`;
+  } else if (key === "floodplain") {
+    flavor = `<path d="M${f.x} ${H - 6} Q${f.x + 120} ${H - 14} ${f.x + 250} ${H - 6} T${W} ${H - 8}" stroke="#5aa7c2" stroke-width="7" fill="none" opacity="0.85"/>`;
+  } else if (key === "plateau") {
+    [[18, 222], [200, 226], [60, 470], [214, 470], [236, 30]].forEach(([x, y], i) => {
+      flavor += `<ellipse cx="${x}" cy="${y}" rx="${5 + (i % 3) * 2}" ry="${3.5 + (i % 2)}" fill="#8f8a7e" opacity="0.8"/>`;
+    });
+  }
+  // crop rows: a dark furrow with plants along it, same rows the robots work
+  let rows = "";
+  for (let k = 0; k < FARM_GEO.rows; k++) {
+    const y = farmRowY(k);
+    rows += `<rect x="${f.x + 10}" y="${(y - 9).toFixed(1)}" width="${f.w - 20}" height="18" rx="9" fill="${p.furrow}" opacity="0.75"/>`;
+    for (let x = f.x + 20, j = 0; x < f.x + f.w - 16; x += 15, j++) {
+      const jy = ((j * 7 + k * 3) % 5) - 2;
+      rows += `<circle cx="${x}" cy="${(y + jy * 0.6).toFixed(1)}" r="5" fill="${p.crop}"/><circle cx="${x - 1.5}" cy="${(y + jy * 0.6 - 1.5).toFixed(1)}" r="2.2" fill="${p.cropHi}"/>`;
+    }
+  }
+  const solars = sandboxItems.filter(i => i.type === "solar");
+  const batts = sandboxItems.filter(i => i.type === "battery");
+  const robots = sandboxItems.filter(i => i.type === "robot");
+  const arrayBottom = solars.length ? Math.max(...solars.map(s => s.y)) + 22 : 80;
+  const bankBottom = batts.length ? Math.max(...batts.map(b => b.y)) + 20 : 290;
+  return `
+    <rect x="0" y="0" width="${W}" height="${H}" rx="14" fill="${p.grass}"/>
+    ${flavor}
+    <rect x="228" y="12" width="16" height="${H - 24}" rx="4" fill="#c4a878"/>
+    <line x1="232" y1="16" x2="232" y2="${H - 16}" stroke="#a88c5c" stroke-width="1.5" stroke-dasharray="6,5"/>
+    <line x1="240" y1="16" x2="240" y2="${H - 16}" stroke="#a88c5c" stroke-width="1.5" stroke-dasharray="6,5"/>
+    <rect x="${f.x}" y="${f.y}" width="${f.w}" height="${f.h}" rx="10" fill="${p.soil}"/>
+    ${rows}
+    <rect x="14" y="32" width="198" height="${arrayBottom - 26}" rx="6" fill="#d8d2c2" stroke="#b9b19c"/>
+    ${farmLabel(16, 26, "Solar array")}
+    <rect x="16" y="252" width="194" height="${bankBottom - 246}" rx="6" fill="#c9c6bd" stroke="#a9a598"/>
+    ${farmLabel(18, 246, "Battery bank")}
+    <rect x="22" y="378" width="108" height="84" rx="4" fill="#9c3b2e"/>
+    <line x1="22" y1="420" x2="130" y2="420" stroke="#7a2c22" stroke-width="2"/>
+    <rect x="136" y="378" width="76" height="84" rx="4" fill="#c9c6bd" stroke="#a9a598"/>
+    ${[150, 172, 194].map(x => `<rect x="${x - 4}" y="386" width="8" height="12" rx="2" fill="#4a4f52"/><circle cx="${x}" cy="392" r="2" fill="#e8a318"/>`).join("")}
+    ${farmLabel(24, 372, "Charge dock")}
+    <path class="farm-conduit" d="M112 ${arrayBottom + 6} V252 M112 ${bankBottom + 6} V378 M212 426 H250" stroke="#e8a318" stroke-width="3" fill="none" stroke-dasharray="6,5" stroke-linecap="round"/>
+    ${solars.map(farmSolarMarkup).join("")}
+    ${batts.map(farmBatteryMarkup).join("")}
+    ${robots.map(farmRobotMarkup).join("")}`;
+}
+
 function renderSandbox() {
   const svg = document.getElementById("sandboxCanvas");
   if (!svg) return;
-  svg.innerHTML = `<g id="sandboxViewport">
-      <rect x="0" y="0" width="${SANDBOX_W}" height="${SANDBOX_H}" rx="14" fill="var(--panel)" stroke="var(--line)" stroke-dasharray="5,4"/>
-      ${sandboxFieldArt(currentKey || "field")}
-      ${sandboxRows.map(sandboxUserRowMarkup).join("")}
-      ${sandboxWires.map(sandboxWireMarkup).join("")}
-      ${sandboxItems.map(sandboxItemMarkup).join("")}
-    </g>`;
-  applySandboxTransform();
+  svg.innerHTML = farmSceneMarkup(currentKey || "field");
   updateSandboxCounts();
 }
 
 function updateSandboxCounts() {
   const el = document.getElementById("sandboxCounts");
   if (!el) return;
-  const usable = CONFIG.usableBatteryKwh != null ? CONFIG.usableBatteryKwh : usableBatteryCount() * BATTERY_MODULE_KWH;
-  const wired = usableBatteryCount();
-  const totalB = sandboxCount("battery");
-  el.innerHTML = `Solar: <b>${sandboxCount("solar")}</b>/${SANDBOX_CAPS.solar} (${CONFIG.solarM2} m&sup2;) &middot; ` +
-    `Battery: <b>${totalB}</b>/${SANDBOX_CAPS.battery} (<b>${wired}</b> wired → ${usable} kWh usable) &middot; ` +
-    `Robots: <b>${sandboxCount("robot")}</b>/${SANDBOX_CAPS.robot} &middot; Rows: <b>${sandboxRows.length}</b>`;
+  const totalBatteryKwh = sandboxCount("battery") * BATTERY_MODULE_KWH;
+  const connKwh = connectedBatteryKwh();
+  el.innerHTML = `<b>${sandboxCount("solar")}</b> solar panels (${sandboxCount("solar") * SOLAR_MODULE_M2} m&sup2;) &rarr; ` +
+    `<b>${sandboxCount("battery")}</b> battery cabinets (${totalBatteryKwh} kWh) &rarr; ` +
+    `<b>${sandboxCount("robot")}</b> robot${sandboxCount("robot") === 1 ? "" : "s"} charging at the dock and working the rows.`;
 }
 
 function renderSandboxPalette() {
   const el = document.getElementById("sandboxPalette");
   if (!el) return;
   const tierSub = {
-    solar: SOLAR_TIERS.find(t => t.key === CONFIG.solarTier).name,
-    battery: BATTERY_TIERS.find(t => t.key === CONFIG.batteryTier).name,
+    solar: "tap to upgrade tier",
+    battery: "tap to upgrade tier",
     robot: ROBOT_TIERS.find(t => t.key === CONFIG.robotTier).name,
   };
   el.innerHTML = ["solar", "battery", "robot"].map(type => {
     const maxed = sandboxCount(type) >= SANDBOX_CAPS[type];
-    return `<div class="sandbox-chip ${maxed ? "maxed" : ""}" data-type="${type}">
+    const armed = sandboxArmedTool === type;
+    const placeSub = maxed ? "full" : (armed ? "tap the plot to place" : "tap to select");
+    return `<div class="sandbox-chip ${maxed ? "maxed" : ""} ${armed ? "armed" : ""}" data-type="${type}">
       <span class="emoji">${SANDBOX_EMOJI[type]}</span>${SANDBOX_LABEL[type]}
-      <span class="sub">${tierSub[type]}${maxed ? " &middot; full" : " &middot; drag to place"}</span>
+      <span class="sub">${tierSub[type]} &middot; ${placeSub}</span>
     </div>`;
   }).join("");
   el.querySelectorAll(".sandbox-chip").forEach(chip => {
@@ -1222,7 +1608,9 @@ function renderSandboxPalette() {
   });
 }
 
-// screen (client) coords -> fixed world coords (no pan/zoom transform)
+// screen (client) coords -> world/SVG coords, undoing only the SVG's
+// responsive viewBox scaling — the canvas is a fixed, non-pannable viewport
+// now, so there's no view offset/zoom to undo any more.
 function sandboxPointerToWorld(clientX, clientY) {
   const svg = document.getElementById("sandboxCanvas");
   const ctm = svg.getScreenCTM();
@@ -1232,168 +1620,198 @@ function sandboxPointerToWorld(clientX, clientY) {
   const svgP = pt.matrixTransform(ctm.inverse());
   return { x: svgP.x, y: svgP.y };
 }
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+function setSandboxMode(mode) {
+  if (sandboxMode === "row" && rowDraft && rowDraft.points.length >= 2) finishRowDraft();
+  else rowDraft = null;
+  connectDraft = null;
+  sandboxArmedTool = null;
+  sandboxMode = mode;
+  document.querySelectorAll("#sandboxModeToolbar .toolbar-btn[data-mode]").forEach(b => {
+    b.classList.toggle("active", b.dataset.mode === mode);
+  });
+  const svg = document.getElementById("sandboxCanvas");
+  if (svg) svg.style.cursor = mode === "place" ? "default" : "crosshair";
+  updateSandboxModeHint();
+  renderSandbox();
+  renderSandboxPalette();
+}
+function updateSandboxModeHint() {
+  const el = document.getElementById("sandboxModeHint");
+  if (!el) return;
+  if (sandboxMode === "row") {
+    el.textContent = "Click to lay down row points, double-click (or Enter) to finish, Escape to cancel. Tap an existing row's line to delete it.";
+  } else if (sandboxMode === "connect") {
+    el.textContent = "Tap a solar panel, then a battery, to wire them — tap the same pair again to unwire. Tap a wire to remove it.";
+  } else {
+    el.textContent = "Tap Solar, Battery or Robot in the palette to select it, then tap the plot to place one there — tap the palette item again to deselect it. Tap any placed item to open its picker: choose a Solar or Battery's tier or remove it, or set a robot's job, row and recharge battery.";
+  }
+}
+
+function finishRowDraft() {
+  if (rowDraft && rowDraft.points.length >= 2) {
+    sandboxRows.push({ id: sandboxNextId++, points: rowDraft.points });
+  }
+  rowDraft = null;
+  renderSandbox();
+  onSandboxChange();
+}
+
+function handleRowClick(target, evt) {
+  const rowEl = target && target.closest && target.closest(".sandbox-row-path");
+  if (rowEl) {
+    removeSandboxRow(Number(rowEl.dataset.rowId));
+    renderSandbox();
+    onSandboxChange();
+    return;
+  }
+  const world = sandboxPointerToWorld(evt.clientX, evt.clientY);
+  if (!rowDraft) rowDraft = { points: [] };
+  rowDraft.points.push({ x: clamp(world.x, 0, SANDBOX_W), y: clamp(world.y, 0, SANDBOX_H) });
+  renderSandbox();
+}
+
+function handleConnectClick(target, evt) {
+  const wireEl = target && target.closest && target.closest(".sandbox-wire");
+  if (wireEl) {
+    sandboxConnections.splice(Number(wireEl.dataset.idx), 1);
+    connectDraft = null;
+    renderSandbox();
+    onSandboxChange();
+    return;
+  }
+  const itemEl = target && target.closest && target.closest(".sandbox-item");
+  if (!itemEl) { connectDraft = null; renderSandbox(); return; }
+  const id = Number(itemEl.dataset.id);
+  const type = itemEl.dataset.type;
+  if (type !== "solar" && type !== "battery") return;
+  if (!connectDraft || connectDraft.type === type) {
+    connectDraft = { type, id };
+    renderSandbox();
+    return;
+  }
+  const solarId = connectDraft.type === "solar" ? connectDraft.id : id;
+  const batteryId = connectDraft.type === "battery" ? connectDraft.id : id;
+  const existingIdx = sandboxConnections.findIndex(c => c.solarId === solarId && c.batteryId === batteryId);
+  if (existingIdx >= 0) sandboxConnections.splice(existingIdx, 1);
+  else sandboxConnections.push({ solarId, batteryId });
+  connectDraft = null;
+  renderSandbox();
+  onSandboxChange();
+}
 
 function sandboxOnCanvasPointerDown(evt) {
   const svg = document.getElementById("sandboxCanvas");
   try { svg.setPointerCapture(evt.pointerId); } catch (e) {}
+  if (sandboxMode === "row") {
+    sandboxDrag = { mode: "rowclick", startClient: { x: evt.clientX, y: evt.clientY }, moved: false, target: evt.target };
+    evt.preventDefault();
+    return;
+  }
+  if (sandboxMode === "connect") {
+    sandboxDrag = { mode: "connectclick", startClient: { x: evt.clientX, y: evt.clientY }, moved: false, target: evt.target };
+    evt.preventDefault();
+    return;
+  }
   const itemEl = evt.target.closest && evt.target.closest(".sandbox-item");
-  const world = sandboxPointerToWorld(evt.clientX, evt.clientY);
-
-  if (sandboxTool === "wire") {
-    if (itemEl) {
-      const id = Number(itemEl.dataset.id);
-      const it = sandboxItems.find(i => i.id === id);
-      if (!it) return;
-      if (it.type === "solar") {
-        wireFromId = id;
-        renderSandbox();
-        const hint = document.getElementById("sandboxConnectHint");
-        if (hint) { hint.textContent = "Now tap a battery to complete the wire"; hint.classList.add("show"); }
-      } else if (it.type === "battery" && wireFromId != null) {
-        // complete wire (allow one-to-many / many-to-one)
-        const already = sandboxWires.some(w => w.fromId === wireFromId && w.toId === id);
-        if (!already) {
-          sandboxWires.push({ id: sandboxNextId++, fromId: wireFromId, toId: id });
-        }
-        wireFromId = null;
-        renderSandbox();
-        onSandboxChange();
-        const hint = document.getElementById("sandboxConnectHint");
-        if (hint) { hint.textContent = "Tap a solar panel, then a battery to wire them"; }
-      }
-    }
-    evt.preventDefault();
-    return;
-  }
-
-  if (sandboxTool === "row") {
-    sandboxDrag = { mode: "row", points: [world], startClient: { x: evt.clientX, y: evt.clientY }, moved: false };
-    evt.preventDefault();
-    return;
-  }
-
-  // place tool (default): drag items or tap
   if (itemEl) {
     sandboxDrag = { mode: "item", id: Number(itemEl.dataset.id), startClient: { x: evt.clientX, y: evt.clientY }, moved: false };
+  } else if (sandboxArmedTool) {
+    // a palette tool is armed: this tap on empty plot places a new item there
+    sandboxDrag = { mode: "placenew", startClient: { x: evt.clientX, y: evt.clientY }, moved: false };
   } else {
-    sandboxDrag = { mode: "none", startClient: { x: evt.clientX, y: evt.clientY }, moved: false };
+    sandboxDrag = null; // fixed canvas: pressing empty background does nothing now
   }
   evt.preventDefault();
 }
 function sandboxOnCanvasPointerMove(evt) {
-  if (!sandboxDrag) return;
-  const dx = evt.clientX - sandboxDrag.startClient.x, dy = evt.clientY - sandboxDrag.startClient.y;
-  if (Math.abs(dx) > 3 || Math.abs(dy) > 3) sandboxDrag.moved = true;
-
-  if (sandboxDrag.mode === "item") {
-    const world = sandboxPointerToWorld(evt.clientX, evt.clientY);
-    const it = sandboxItems.find(i => i.id === sandboxDrag.id);
-    if (it) { it.x = world.x; it.y = world.y; sandboxItemTransform(it); }
-  } else if (sandboxDrag.mode === "row") {
-    const world = sandboxPointerToWorld(evt.clientX, evt.clientY);
-    sandboxDrag.points.push(world);
-    // live preview: last path in the SVG
-    let prev = document.getElementById("rowPreview");
-    if (!prev) {
-      const g = document.getElementById("sandboxViewport");
-      if (g) {
-        prev = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        prev.id = "rowPreview";
-        prev.setAttribute("class", "sandbox-user-row");
-        prev.setAttribute("opacity", "0.85");
-        g.appendChild(prev);
-      }
-    }
-    if (prev) {
-      const d = sandboxDrag.points.map((p, i) => (i === 0 ? "M" : "L") + p.x + "," + p.y).join(" ");
-      prev.setAttribute("d", d);
-    }
-  }
+  // items no longer drag — placement, moving and removal are all deliberate
+  // taps/clicks (see sandboxOnCanvasPointerUp), so there's nothing to track
+  // here for mode "item" beyond letting row/connect click-tracking pass through.
 }
 function sandboxOnCanvasPointerUp(evt) {
   if (!sandboxDrag) return;
   if (sandboxDrag.mode === "item") {
-    if (!sandboxDrag.moved) {
-      const tapped = sandboxItems.find(i => i.id === sandboxDrag.id);
-      const type = tapped && tapped.type;
-      if (type === "robot") {
-        showRobotJobPicker(sandboxDrag.id);
-      } else if (type && sandboxCount(type) > 1) {
-        // also drop any wires attached to a removed solar/battery
-        const rid = sandboxDrag.id;
-        sandboxItems = sandboxItems.filter(i => i.id !== rid);
-        sandboxWires = sandboxWires.filter(w => w.fromId !== rid && w.toId !== rid);
-        renderSandbox();
-      }
+    // every tap on a placed item is a deliberate click that opens its picker:
+    // a robot's job/row/power picker, or a Solar/Battery item's tier+Remove
+    // picker — no drag-to-move, no drag-off-the-plot-to-remove.
+    const tapped = sandboxItems.find(i => i.id === sandboxDrag.id);
+    const type = tapped && tapped.type;
+    if (type === "robot" || type === "solar" || type === "battery") {
+      showRobotJobPicker(sandboxDrag.id);
     }
     onSandboxChange();
-  } else if (sandboxDrag.mode === "row") {
-    const preview = document.getElementById("rowPreview");
-    if (preview) preview.remove();
-    if (sandboxDrag.moved && sandboxDrag.points.length >= 2) {
-      // simplify a bit
-      const pts = sandboxDrag.points.filter((_, i) => i === 0 || i === sandboxDrag.points.length - 1 || i % 3 === 0);
-      sandboxRows.push({ id: sandboxNextId++, points: pts });
-      renderSandbox();
-    }
-  } else if (sandboxDrag.mode === "none" && !sandboxDrag.moved) {
-    hideRobotJobPicker();
+  } else if (sandboxDrag.mode === "rowclick") {
+    if (!sandboxDrag.moved) handleRowClick(sandboxDrag.target, evt);
+  } else if (sandboxDrag.mode === "connectclick") {
+    if (!sandboxDrag.moved) handleConnectClick(sandboxDrag.target, evt);
+  } else if (sandboxDrag.mode === "placenew") {
+    placeNewItemAt(sandboxArmedTool, evt.clientX, evt.clientY);
   }
   sandboxDrag = null;
 }
 
+// tap-to-place: called on a canvas tap while a palette tool is armed. Places
+// one base-tier item of that type at the tapped/converted world position.
+// The tool stays armed afterward so a run of taps can place several in a row
+// (Draw Row's "select a mode, then act" language, applied to placement).
+function placeNewItemAt(type, clientX, clientY) {
+  if (!type) return;
+  if (sandboxCount(type) >= SANDBOX_CAPS[type]) return;
+  const svg = document.getElementById("sandboxCanvas");
+  const rect = svg.getBoundingClientRect();
+  // only place it if the tap actually landed on the canvas
+  if (clientX < rect.left || clientX > rect.right || clientY < rect.top || clientY > rect.bottom) return;
+  const world = sandboxPointerToWorld(clientX, clientY);
+  const newItem = {
+    id: sandboxNextId++, type,
+    x: clamp(world.x, 0, SANDBOX_W), y: clamp(world.y, 0, SANDBOX_H),
+  };
+  if (type === "robot") { newItem.job = DEFAULT_ROBOT_JOB; newItem.rowId = null; newItem.batteryId = null; }
+  if (type === "solar") newItem.tier = SOLAR_TIERS[0].key;
+  if (type === "battery") newItem.tier = BATTERY_TIERS[0].key;
+  sandboxItems.push(newItem);
+  renderSandbox();
+  onSandboxChange();
+}
+
+// tap-to-select on the palette: a plain tap (pointerdown+pointerup with no
+// real movement, mirroring the row/connect click pattern above) arms or
+// disarms that type's placement tool. No drag gesture is involved.
 function sandboxPalettePointerDown(evt) {
-  const type = evt.currentTarget.dataset.type;
+  const chip = evt.currentTarget;
+  const type = chip.dataset.type;
+  if (sandboxMode !== "place") return; // only place equipment while in the Place/Move tool
   if (sandboxCount(type) >= SANDBOX_CAPS[type]) return;
   evt.preventDefault();
-  const chip = evt.currentTarget;
   try { chip.setPointerCapture(evt.pointerId); } catch (e) {}
-  const ghost = document.createElement("div");
-  ghost.className = "sandbox-ghost";
-  ghost.textContent = SANDBOX_EMOJI[type];
-  ghost.style.left = evt.clientX + "px";
-  ghost.style.top = evt.clientY + "px";
-  document.body.appendChild(ghost);
-  sandboxDrag = { mode: "new", type, ghost, startClient: { x: evt.clientX, y: evt.clientY }, moved: false, chip };
+  const startClient = { x: evt.clientX, y: evt.clientY };
+  let moved = false;
 
   function onMove(e) {
-    ghost.style.left = e.clientX + "px";
-    ghost.style.top = e.clientY + "px";
-    const dx = e.clientX - sandboxDrag.startClient.x, dy = e.clientY - sandboxDrag.startClient.y;
-    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) sandboxDrag.moved = true;
+    const dx = e.clientX - startClient.x, dy = e.clientY - startClient.y;
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) moved = true;
   }
-  function onUp(e) {
-    ghost.remove();
+  function cleanup() {
     chip.removeEventListener("pointermove", onMove);
     chip.removeEventListener("pointerup", onUp);
-    if (sandboxDrag && sandboxDrag.moved) {
-      const svg = document.getElementById("sandboxCanvas");
-      const rect = svg.getBoundingClientRect();
-      // only place it if the drop actually landed on the canvas
-      if (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
-        const world = sandboxPointerToWorld(e.clientX, e.clientY);
-        const newItem = { id: sandboxNextId++, type, x: world.x, y: world.y };
-        if (type === "robot") newItem.job = DEFAULT_ROBOT_JOB;
-        sandboxItems.push(newItem);
-        renderSandbox();
-        onSandboxChange();
-      }
-    }
-    sandboxDrag = null;
+    chip.removeEventListener("pointercancel", cleanup);
+  }
+  function onUp() {
+    cleanup();
+    if (moved) return; // a drag on the chip itself is not a tap; ignore it
+    sandboxArmedTool = sandboxArmedTool === type ? null : type;
+    renderSandboxPalette();
   }
   chip.addEventListener("pointermove", onMove);
   chip.addEventListener("pointerup", onUp);
-}
-
-function sandboxZoomAt() { /* fixed canvas — no free zoom */ }
-function sandboxZoom() { /* fixed canvas — no free zoom */ }
-function sandboxOnWheel(evt) {
-  evt.preventDefault(); // absorb wheel so the page doesn't scroll while over the plot
+  chip.addEventListener("pointercancel", cleanup);
 }
 
 function onSandboxChange() {
   syncConfigFromSandbox();
-  renderSandboxPalette();
+  renderFarmControls();
   updateSandboxCounts();
   clearTimeout(configChangeTimer);
   configChangeTimer = setTimeout(refreshLedger, 90);
@@ -1418,12 +1836,51 @@ function renderRobotJobPicker() {
   const item = sandboxItems.find(i => i.id === selectedRobotId);
   if (!item) { hideRobotJobPicker(); return; }
   panel.classList.add("open");
+  if (item.type === "solar" || item.type === "battery") {
+    // a click on a placed Solar/Battery is a decision, not a gesture: pick
+    // its tier from the actual options (with what each costs), or remove it
+    // — replacing the old silent tap-to-cycle-then-drag-to-remove pair.
+    const arr = itemTierArr(item.type);
+    const curIdx = Math.max(0, arr.findIndex(t => t.key === item.tier));
+    document.getElementById("rjpTitle").textContent =
+      (item.type === "solar" ? "This solar panel's tier" : "This battery's tier");
+    const tierHtml = arr.map((t, idx) => `<button type="button" class="rjp-btn ${idx === curIdx ? "active" : ""}"
+        onclick="setItemTier(${item.id}, '${t.key}')">${t.name}</button>`).join("") +
+      `<button type="button" class="rjp-btn remove" onclick="removeSolarOrBattery(${item.id})">Remove</button>`;
+    document.getElementById("rjpButtons").innerHTML = `<div class="rjp-row">${tierHtml}</div>`;
+    return;
+  }
   const curJob = robotJobFor(item).key;
-  document.getElementById("rjpTitle").textContent = "This robot's job";
-  document.getElementById("rjpButtons").innerHTML =
-    ROBOT_JOBS.map(j => `<button type="button" class="rjp-btn ${j.key === curJob ? "active" : ""}"
-        onclick="assignRobotJob(${item.id}, '${j.key}')">${j.name}</button>`).join("") +
+  const curRow = item.rowId || null;
+  const curBattery = item.batteryId || null;
+  const batteries = sandboxItems.filter(i => i.type === "battery");
+  document.getElementById("rjpTitle").textContent = "This robot's job, row & power";
+
+  const jobHtml = ROBOT_JOBS.map(j => `<button type="button" class="rjp-btn ${j.key === curJob ? "active" : ""}"
+      onclick="assignRobotJob(${item.id}, '${j.key}')">${j.name}</button>`).join("") +
     `<button type="button" class="rjp-btn remove" onclick="removeRobotItem(${item.id})">Remove</button>`;
+
+  const rowHtml = `<button type="button" class="rjp-btn ${!curRow ? "active" : ""}"
+      onclick="assignRobotRow(${item.id}, null)">None (idle motion)</button>` +
+    sandboxRows.map((r, idx) => `<button type="button" class="rjp-btn ${curRow === r.id ? "active" : ""}"
+        onclick="assignRobotRow(${item.id}, ${r.id})">Row ${idx + 1}</button>`).join("");
+  const rowSection = sandboxRows.length
+    ? `<p class="rjp-sub">Follows row</p><div class="rjp-row">${rowHtml}</div>`
+    : `<p class="rjp-sub">Follows row <span style="font-weight:400;">— draw a row with the Draw Row tool first</span></p>`;
+
+  const battHtml = `<button type="button" class="rjp-btn ${!curBattery ? "active" : ""}"
+      onclick="assignRobotBattery(${item.id}, null)">None (unpowered)</button>` +
+    batteries.map((b, idx) => {
+      const connected = batteryConnected(b.id);
+      return `<button type="button" class="rjp-btn ${curBattery === b.id ? "active" : ""}"
+          onclick="assignRobotBattery(${item.id}, ${b.id})">Battery ${idx + 1}${connected ? "" : " (unconnected)"}</button>`;
+    }).join("");
+  const battSection = batteries.length
+    ? `<p class="rjp-sub">Recharges from</p><div class="rjp-row">${battHtml}</div>`
+    : `<p class="rjp-sub">Recharges from <span style="font-weight:400;">— place a battery first</span></p>`;
+
+  document.getElementById("rjpButtons").innerHTML =
+    `<div class="rjp-row">${jobHtml}</div>${rowSection}${battSection}`;
 }
 function assignRobotJob(id, jobKey) {
   const item = sandboxItems.find(i => i.id === id);
@@ -1433,22 +1890,50 @@ function assignRobotJob(id, jobKey) {
   renderSandboxPalette();
   onSandboxChange();
 }
+function assignRobotRow(id, rowId) {
+  const item = sandboxItems.find(i => i.id === id);
+  if (!item) return;
+  item.rowId = rowId || null;
+  renderRobotJobPicker();
+  onSandboxChange();
+}
+function assignRobotBattery(id, batteryId) {
+  const item = sandboxItems.find(i => i.id === id);
+  if (!item) return;
+  item.batteryId = batteryId || null;
+  renderRobotJobPicker();
+  renderSandbox();
+  onSandboxChange();
+}
 function removeRobotItem(id) {
   if (sandboxCount("robot") <= 1) { hideRobotJobPicker(); return; } // never below one robot
-  sandboxItems = sandboxItems.filter(i => i.id !== id);
+  removeSandboxItem(id);
+  hideRobotJobPicker();
+  renderSandbox();
+  onSandboxChange();
+}
+function setItemTier(id, tierKey) {
+  const item = sandboxItems.find(i => i.id === id);
+  if (!item) return;
+  item.tier = tierKey;
+  renderRobotJobPicker();
+  renderSandbox();
+  renderSandboxPalette();
+  onSandboxChange();
+}
+function removeSolarOrBattery(id) {
+  const item = sandboxItems.find(i => i.id === id);
+  if (!item) return;
+  if (sandboxCount(item.type) <= 1) { hideRobotJobPicker(); return; } // never below one of each
+  removeSandboxItem(id);
   hideRobotJobPicker();
   renderSandbox();
   onSandboxChange();
 }
 
 function initSandboxCanvas() {
-  const svg = document.getElementById("sandboxCanvas");
-  if (!svg) return;
-  svg.addEventListener("pointerdown", sandboxOnCanvasPointerDown);
-  svg.addEventListener("pointermove", sandboxOnCanvasPointerMove);
-  svg.addEventListener("pointerup", sandboxOnCanvasPointerUp);
-  svg.addEventListener("pointercancel", sandboxOnCanvasPointerUp);
-  svg.addEventListener("wheel", sandboxOnWheel, { passive: false });
+  // the farm is laid out for you now — the picture isn't a placement surface,
+  // so there are no pointer/drag/draw handlers to attach
 }
 
 // ---------- stage 1: place picker ----------
@@ -1621,20 +2106,15 @@ function tierGroupHtml(groupId, tiers, activeKey, subFn, onClick) {
       onclick="${onClick}('${t.key}')">${t.name}<span class="sub">${subFn(t)}</span></button>`).join("");
 }
 
-function selectSolarTier(key) { CONFIG.solarTier = key; renderTiers(); refreshLedger(); }
-function selectBatteryTier(key) { CONFIG.batteryTier = key; renderTiers(); refreshLedger(); }
 function selectRobotTier(key) { CONFIG.robotTier = key; renderTiers(); refreshLedger(); }
 function selectFertilizerChoice(key) { CONFIG.fertilizerChoice = key; renderTiers(); refreshLedger(); }
 function selectWaterChoice(key) { CONFIG.waterChoice = key; renderTiers(); refreshLedger(); }
 
 function renderTiers() {
-  document.getElementById("tierSolar").innerHTML = tierGroupHtml("tierSolar", SOLAR_TIERS, CONFIG.solarTier,
-    t => `${Math.round(t.efficiency * 100)}% · $${t.cost_per_m2}/m²`, "selectSolarTier");
-  document.getElementById("tierBattery").innerHTML = tierGroupHtml("tierBattery", BATTERY_TIERS, CONFIG.batteryTier,
-    t => `${t.cycle_life} cyc · $${t.cost_per_kwh}/kWh`, "selectBatteryTier");
-  document.getElementById("tierRobot").innerHTML = tierGroupHtml("tierRobot", ROBOT_TIERS, CONFIG.robotTier,
-    t => `${t.load_kw_each} kW · $${t.cost_each.toLocaleString()}`, "selectRobotTier");
-  renderSandboxPalette();
+  // Solar and Battery no longer have a standalone tier-button row — tier is
+  // now a per-item property you set by tapping the placed item in the
+  // sandbox (see cycleItemTier / tierBadgeMarkup above).
+  renderFarmControls();
 
   const gapCrops = fertilizerGapCrops();
   const fertPanel = document.getElementById("fertilizerPanel");
@@ -1687,28 +2167,30 @@ function moodFor(darkHours, minSoc) {
 let sandboxCanvasInited = false;
 function buildLedgerView() {
   renderTiers();
-  syncConfigFromSandbox(); // so usableBatteryKwh reflects wired state before first sim
-  renderSandboxPalette();
   renderSandbox();
   if (!sandboxCanvasInited) { initSandboxCanvas(); sandboxCanvasInited = true; }
   refreshLedger();
+  startFarmIdle();
+}
+// robots are always out working the rows between Simulate runs — no Go button
+function startFarmIdle() {
+  if (robotsGoActive || stage !== "build") return;
+  robotsGoActive = true;
+  startRobotsGoLoop();
 }
 
 function refreshLedger() {
   cancelSimPlayback(); // any config change invalidates an in-flight playback
   const scene = SCENES[currentKey];
-  const solarTier = SOLAR_TIERS.find(t => t.key === CONFIG.solarTier);
-  const batteryTier = BATTERY_TIERS.find(t => t.key === CONFIG.batteryTier);
+  const solarTier = solarAggregate();
+  const batteryTier = batteryAggregate();
   const robotTier = ROBOT_TIERS.find(t => t.key === CONFIG.robotTier);
 
   SOLAR.area_m2 = CONFIG.solarM2;
   SOLAR.efficiency = solarTier.efficiency;
-  // Only wired batteries contribute to runtime capacity. Unconnected packs
-  // remain in cost/inventory but are invisible to the charge/discharge math.
-  const usableKwh = (CONFIG.usableBatteryKwh != null) ? CONFIG.usableBatteryKwh : CONFIG.batteryKwh;
-  BATTERY_SPEC.capacity_kwh = Math.max(0.1, usableKwh); // floor so the sim doesn't divide-by-zero
-  BATTERY_SPEC.max_charge_kw = BATTERY_SPEC.capacity_kwh * 0.33;
-  BATTERY_SPEC.max_discharge_kw = BATTERY_SPEC.capacity_kwh * 0.33;
+  BATTERY_SPEC.capacity_kwh = CONFIG.batteryKwh;
+  BATTERY_SPEC.max_charge_kw = CONFIG.batteryKwh * 0.33;
+  BATTERY_SPEC.max_discharge_kw = CONFIG.batteryKwh * 0.33;
 
   const loadKw = totalLoadKw(CONFIG.robots, CONFIG.robotTier, CONFIG.fertilizerChoice, CONFIG.waterChoice);
 
@@ -1731,13 +2213,9 @@ function applyLedgerResults(rows, loadKw, solarTier, batteryTier, robotTier) {
   const minSoc = Math.min(...rows.map(r => r.soc));
   const mood = moodFor(darkHours, minSoc);
   document.getElementById("moodLine").textContent = mood.text;
-  const usable = CONFIG.usableBatteryKwh != null ? CONFIG.usableBatteryKwh : CONFIG.batteryKwh;
-  const wiredNote = usable < CONFIG.batteryKwh
-    ? ` (${usable} kWh wired / usable — unconnected packs don't charge)`
-    : "";
   document.getElementById("drawLine").innerHTML =
     `${mood.sub} Growing <b>${names}</b> with ${CONFIG.robots} ${robotTier.name.toLowerCase()}${CONFIG.robots > 1 ? "s" : ""}, ` +
-    `${CONFIG.solarM2} m² of ${solarTier.name.toLowerCase()} panels and ${CONFIG.batteryKwh} kWh of ${batteryTier.name} battery${wiredNote} ` +
+    `${CONFIG.solarM2} m² of ${solarTier.name.toLowerCase()} panels and a ${CONFIG.batteryKwh} kWh ${batteryTier.name} battery ` +
     `draws <b>${loadKw.toFixed(1)} kW</b> around the clock — that's the load line below.`;
 
   drawChart(rows);
@@ -1761,59 +2239,38 @@ function setRobotAnimTransform(id, dx, dy, rot) {
   const el = document.getElementById("robotAnim-" + id);
   if (el) el.setAttribute("transform", `translate(${dx.toFixed(2)},${dy.toFixed(2)}) rotate(${(rot || 0).toFixed(1)})`);
 }
-
-// Sample a point along the union of user-drawn rows (or fallback horizontal
-// furrows). Robots and seed drones travel the whole path when Go is pressed.
-function pathPointAt(progress) {
-  // progress in [0,1) over the concatenated length of all rows
-  const rows = sandboxRows.length ? sandboxRows : [
-    { points: [{ x: 40, y: 400 }, { x: SANDBOX_W - 40, y: 400 }] }
-  ];
-  // build segment lengths
-  let total = 0;
-  const segs = [];
-  rows.forEach(r => {
-    for (let i = 1; i < r.points.length; i++) {
-      const a = r.points[i - 1], b = r.points[i];
-      const len = Math.hypot(b.x - a.x, b.y - a.y) || 1;
-      segs.push({ a, b, len, start: total });
-      total += len;
-    }
-  });
-  if (total < 1e-6) return { x: SANDBOX_W / 2, y: SANDBOX_H * 0.75, angle: 0 };
-  // ping-pong: go out and back so motion stays on the farm
-  const cycle = total * 2;
-  let pos = ((progress % 1) + 1) % 1 * cycle;
-  let reverse = false;
-  if (pos > total) { pos = cycle - pos; reverse = true; }
-  const d = pos;
-  for (const s of segs) {
-    if (d <= s.start + s.len) {
-      const u = (d - s.start) / s.len;
-      const x = s.a.x + (s.b.x - s.a.x) * u;
-      const y = s.a.y + (s.b.y - s.a.y) * u;
-      let angle = Math.atan2(s.b.y - s.a.y, s.b.x - s.a.x) * 180 / Math.PI;
-      if (reverse) angle += 180;
-      return { x, y, angle };
-    }
-  }
-  const last = segs[segs.length - 1];
-  return { x: last.b.x, y: last.b.y, angle: 0 };
+// clears the per-tick opacity dimming a playback pass applies, leaving only
+// the static (connected-ness based) sandbox-unpowered dimming from renderSandbox
+function resetRobotOpacity() {
+  document.querySelectorAll('#sandboxCanvas .sandbox-item[data-type="robot"]').forEach(el => { el.style.opacity = ""; });
 }
 
 function animateRobotIdle(it, t) {
+  const outerEl = document.querySelector('#sandboxCanvas .sandbox-item[data-id="' + it.id + '"]');
+  if (outerEl) outerEl.classList.toggle("sandbox-unpowered", !robotPowered(it));
+  const row = it.rowId ? sandboxRows.find(r => r.id === it.rowId) : null;
+  if (row && row.points.length >= 2) {
+    const period = 8; // seconds for one full back-and-forth walk along the row
+    const tCycle = (t + (it.id % 7) * 0.5) / period;
+    const pos = robotRowPosition(row, tCycle);
+    const frac = ((tCycle % 1) + 1) % 1;
+    setRobotAnimTransform(it.id, pos.x - it.x, pos.y - it.y, frac < 0.5 ? 0 : 180);
+    return;
+  }
   const job = robotJobFor(it).key;
-  const phase = (it.id % 7) * 0.37;
-  // each robot offset along the shared path so they spread out
-  const speed = job === "seed" ? 0.08 : (job === "harvest" ? 0.04 : 0.055);
-  const progress = t * speed + phase;
-  const pt = pathPointAt(progress);
-  // offset relative to the robot's parked placement so the outer transform stays put
-  const dx = pt.x - it.x;
-  const dy = pt.y - it.y;
-  // seed drone flies a little higher
-  const fly = job === "seed" ? -10 - Math.abs(Math.sin(t * 4 + phase)) * 4 : 0;
-  setRobotAnimTransform(it.id, dx, dy + fly, pt.angle || 0);
+  const phase = (it.id % 7) * 0.5;
+  if (job === "seed") {
+    // hops between rows
+    const hop = Math.abs(Math.sin((t + phase) * 3)) * 6;
+    setRobotAnimTransform(it.id, Math.sin((t + phase) * 1.5) * 9, -hop, 0);
+  } else if (job === "harvest") {
+    // pauses at plants, small settle motion
+    const settle = Math.sin((t + phase) * 1.1);
+    setRobotAnimTransform(it.id, settle > 0.5 ? 6 : 0, 0, 0);
+  } else {
+    // tiller: steady back-and-forth along the row
+    setRobotAnimTransform(it.id, Math.sin((t + phase) * 1.0) * 13, 0, 0);
+  }
 }
 
 function startRobotsGoLoop() {
@@ -1828,7 +2285,8 @@ function startRobotsGoLoop() {
 }
 function stopRobotsGoLoop() {
   if (robotsGoRaf !== null) { cancelAnimationFrame(robotsGoRaf); robotsGoRaf = null; }
-  robotItems().forEach(it => setRobotAnimTransform(it.id, 0, 0, 0)); // return to parked placement
+  robotItems().forEach(it => setRobotAnimTransform(it.id, 0, 0, 0));
+  resetRobotOpacity();
 }
 function toggleRobotsGo() {
   robotsGoActive = !robotsGoActive;
@@ -1860,6 +2318,7 @@ function cancelSimPlayback() {
   const btn = document.getElementById("simulateBtn");
   if (btn) { btn.disabled = false; btn.textContent = "Simulate"; }
   robotItems().forEach(it => setRobotAnimTransform(it.id, 0, 0, 0));
+  resetRobotOpacity();
 }
 
 function updateSimIndicator(row, dayIdx, totalDays) {
@@ -1879,11 +2338,30 @@ function updateSimIndicator(row, dayIdx, totalDays) {
 }
 
 // job-specific work motion for one playback tick — paused (no offset) on an
-// hour that left load unmet, since a starved farm's robots aren't out working
-function animateRobotWork(it, row, hourIdx) {
-  const job = robotJobFor(it).key;
-  const working = row.unmet <= 1e-6;
+// hour that left load unmet, or when the robot has no reachable
+// connected+charged battery, since neither farm state has it out working.
+// A robot bound to a row walks that row's exact path instead of its job's
+// generic motion; unpowered/starved robots are also dimmed via the
+// sandbox-unpowered class so it's visible at a glance, not just implied by
+// standing still.
+function animateRobotWork(it, dayRow, hourIdx) {
+  const outerEl = document.querySelector('#sandboxCanvas .sandbox-item[data-id="' + it.id + '"]');
+  const powered = robotPowered(it);
+  const hasCharge = dayRow.soc > 0.05;
+  const working = powered && hasCharge && dayRow.unmet <= 1e-6;
+  if (outerEl) {
+    outerEl.classList.toggle("sandbox-unpowered", !powered);
+    outerEl.style.opacity = working ? "1" : (powered ? "0.75" : "0.4");
+  }
   if (!working) { setRobotAnimTransform(it.id, 0, 0, 0); return; }
+  const rowDef = it.rowId ? sandboxRows.find(r => r.id === it.rowId) : null;
+  if (rowDef && rowDef.points.length >= 2) {
+    const tCycle = (hourIdx % 24) / 24; // one full back-and-forth per simulated day
+    const pos = robotRowPosition(rowDef, tCycle);
+    setRobotAnimTransform(it.id, pos.x - it.x, pos.y - it.y, 0);
+    return;
+  }
+  const job = robotJobFor(it).key;
   const phase = it.id % 7;
   if (job === "seed") {
     setRobotAnimTransform(it.id, ((hourIdx + phase) % 4) * 6 - 9, (hourIdx % 2 === 0) ? -8 : 0, 0);
@@ -1914,15 +2392,14 @@ function runSimulatePlayback() {
     if (goBtn) { goBtn.textContent = "Robots: Go"; goBtn.classList.remove("active"); }
   }
 
-  const solarTier = SOLAR_TIERS.find(t => t.key === CONFIG.solarTier);
-  const batteryTier = BATTERY_TIERS.find(t => t.key === CONFIG.batteryTier);
+  const solarTier = solarAggregate();
+  const batteryTier = batteryAggregate();
   const robotTier = ROBOT_TIERS.find(t => t.key === CONFIG.robotTier);
   SOLAR.area_m2 = CONFIG.solarM2;
   SOLAR.efficiency = solarTier.efficiency;
-  const usableKwh = (CONFIG.usableBatteryKwh != null) ? CONFIG.usableBatteryKwh : CONFIG.batteryKwh;
-  BATTERY_SPEC.capacity_kwh = Math.max(0.1, usableKwh);
-  BATTERY_SPEC.max_charge_kw = BATTERY_SPEC.capacity_kwh * 0.33;
-  BATTERY_SPEC.max_discharge_kw = BATTERY_SPEC.capacity_kwh * 0.33;
+  BATTERY_SPEC.capacity_kwh = CONFIG.batteryKwh;
+  BATTERY_SPEC.max_charge_kw = CONFIG.batteryKwh * 0.33;
+  BATTERY_SPEC.max_discharge_kw = CONFIG.batteryKwh * 0.33;
   const loadKw = totalLoadKw(CONFIG.robots, CONFIG.robotTier, CONFIG.fertilizerChoice, CONFIG.waterChoice);
   // the exact same real dataset the instant path computes — playback is a
   // faithful visualization of this, not a separate decorative animation
@@ -1961,7 +2438,9 @@ function finishPlayback(rows, loadKw, solarTier, batteryTier, robotTier) {
   const btn = document.getElementById("simulateBtn");
   if (btn) { btn.disabled = false; btn.textContent = "Simulate"; }
   robotItems().forEach(it => setRobotAnimTransform(it.id, 0, 0, 0));
+  resetRobotOpacity();
   applyLedgerResults(rows, loadKw, solarTier, batteryTier, robotTier);
+  startFarmIdle();
 }
 
 // ============================================================
@@ -1975,8 +2454,8 @@ function buildPrintSpecHtml() {
     return `<h1>Tillwatt Farm Spec</h1><p class="ps-sub">Build a farm and run it to a result first, then print.</p>`;
   }
   const scene = SCENES[currentKey];
-  const solarTier = SOLAR_TIERS.find(t => t.key === CONFIG.solarTier);
-  const batteryTier = BATTERY_TIERS.find(t => t.key === CONFIG.batteryTier);
+  const solarTier = solarAggregate();
+  const batteryTier = batteryAggregate();
   const robotTier = ROBOT_TIERS.find(t => t.key === CONFIG.robotTier);
   const cropNames = [...selected].map(k => (CROPS.find(c => c.key === k) || {}).name || k).join(", ") || "—";
   const r = currentRun;
@@ -2043,8 +2522,11 @@ function fmtMoney(n) {
 }
 
 function drawMoney(rows, solarTier, batteryTier, robotTier, darkHours) {
-  const capexSolar = CONFIG.solarM2 * solarTier.cost_per_m2;
-  const capexBattery = CONFIG.batteryKwh * batteryTier.cost_per_kwh;
+  // solarTier/batteryTier are now the blended solarAggregate()/batteryAggregate()
+  // objects — .capex is already the sum of each placed item's own tier cost,
+  // not one global tier times a total size.
+  const capexSolar = solarTier.capex;
+  const capexBattery = batteryTier.capex;
   const capexRobots = robotCostTotal(CONFIG.robots, CONFIG.robotTier);
   const gapCrops = fertilizerGapCrops();
   const fertOnFarm = CONFIG.fertilizerChoice === "onfarm" && gapCrops.length > 0;
@@ -2062,7 +2544,7 @@ function drawMoney(rows, solarTier, batteryTier, robotTier, darkHours) {
   // Upkeep: a real ongoing cost, not just a one-time build price — cheaper
   // tiers carry a higher upkeep_pct, so "Bare Minimum" gear is cheap to buy
   // and expensive to keep running. Taken off every year, same as fertilizer/water.
-  const annualUpkeep = capexSolar * solarTier.upkeep_pct + capexBattery * batteryTier.upkeep_pct
+  const annualUpkeep = solarTier.upkeep + batteryTier.upkeep
     + capexRobots * robotTier.upkeep_pct;
   document.getElementById("capUpkeep").textContent = fmtMoney(annualUpkeep) + "/yr";
 
@@ -2351,6 +2833,9 @@ function goToStage(next) {
     cancelSimPlayback();
     if (robotsGoActive) { robotsGoActive = false; stopRobotsGoLoop(); }
     hideRobotJobPicker();
+    sandboxMode = "place";
+    rowDraft = null;
+    connectDraft = null;
   }
   stage = next;
   visited.add(next);
