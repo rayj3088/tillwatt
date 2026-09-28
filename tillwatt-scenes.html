@@ -162,6 +162,57 @@
     transform: translate(-50%, -50%); opacity: 0.85; filter: drop-shadow(0 2px 4px rgba(0,0,0,.3));
   }
 
+  /* --- sandbox toolbar: robots go / simulate / print --- */
+  .sandbox-toolbar { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+  .toolbar-btn {
+    flex: 1 1 auto; min-width: 110px; padding: 9px 10px; border-radius: 9px; border: 1px solid var(--line);
+    background: var(--bg); color: var(--ink); font-size: 12px; font-weight: 700; cursor: pointer;
+    text-align: center; transition: all .15s ease;
+  }
+  .toolbar-btn.active { background: var(--served); border-color: var(--served); color: white; }
+  .toolbar-btn.primary { background: var(--accent); border-color: var(--accent); color: white; }
+  .toolbar-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .sim-indicator {
+    position: absolute; top: 8px; left: 8px; display: none; align-items: center; gap: 8px;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 9px; padding: 6px 10px;
+    font-size: 11.5px; font-weight: 600; color: var(--ink); box-shadow: 0 4px 14px rgba(20,30,25,.14);
+    z-index: 5;
+  }
+  .sim-indicator.night { background: var(--ink); color: var(--bg); }
+  .sim-weather-icon { font-size: 15px; }
+  .sim-battery { width: 46px; height: 10px; border-radius: 5px; background: var(--line); overflow: hidden; flex: none; }
+  .sim-battery-fill { height: 100%; background: var(--soc); width: 50%; transition: width .12s linear; }
+
+  /* --- robot job picker: small popover under the sandbox for a tapped robot --- */
+  .robot-job-picker {
+    display: none; margin-top: 8px; padding: 10px; border-radius: 10px; border: 1px solid var(--line);
+    background: var(--bg);
+  }
+  .robot-job-picker.open { display: block; }
+  .robot-job-picker .rjp-title { font-size: 11.5px; font-weight: 700; color: var(--sub); margin: 0 0 8px; }
+  .robot-job-picker .rjp-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .robot-job-picker .rjp-btn {
+    flex: 1 1 auto; min-width: 96px; padding: 7px 8px; border-radius: 8px; border: 1px solid var(--line);
+    background: var(--panel); color: var(--ink); font-size: 11px; font-weight: 600; cursor: pointer; text-align: center;
+  }
+  .robot-job-picker .rjp-btn.active { border-color: var(--accent); background: var(--accent); color: white; }
+  .robot-job-picker .rjp-btn.remove { border-color: var(--unmet); color: var(--unmet); }
+
+  /* --- print spec sheet: hidden on screen, the only thing shown in print --- */
+  .print-only { display: none; }
+  @media print {
+    body * { visibility: hidden; }
+    #printSpec, #printSpec * { visibility: visible; }
+    #printSpec { display: block !important; position: absolute; left: 0; top: 0; width: 100%; padding: 0; margin: 0; }
+    #printSpec h1 { font-size: 20px; margin: 0 0 2px; }
+    #printSpec h2 { font-size: 13px; margin: 14px 0 6px; text-transform: uppercase; letter-spacing: .04em; color: #444; }
+    #printSpec .ps-sub, #printSpec .ps-foot { font-size: 11px; color: #555; }
+    #printSpec .ps-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    #printSpec .ps-table td { padding: 4px 6px; border-bottom: 1px solid #ddd; }
+    #printSpec .ps-table td:first-child { color: #555; width: 40%; }
+  }
+
   .win-banner {
     display: flex; justify-content: space-between; align-items: center; gap: 10px;
     padding: 12px 14px; border-radius: 12px; margin-bottom: 12px; border: 1px solid var(--line);
@@ -345,7 +396,12 @@
         </div>
 
         <div class="panel config-panel" id="sandboxPanel">
-          <p class="config-title">Farm layout <span class="claimed-tag">drag to place, tap to remove</span></p>
+          <p class="config-title">Farm layout <span class="claimed-tag">drag to place, tap a robot to give it a job</span></p>
+          <div class="sandbox-toolbar">
+            <button type="button" class="toolbar-btn" id="robotsGoBtn" onclick="toggleRobotsGo()">Robots: Go</button>
+            <button type="button" class="toolbar-btn primary" id="simulateBtn" onclick="runSimulatePlayback()">Simulate</button>
+            <button type="button" class="toolbar-btn" onclick="printFarmSpec()">Print Farm Spec</button>
+          </div>
           <div class="sandbox-palette" id="sandboxPalette"></div>
           <div class="sandbox-wrap">
             <svg id="sandboxCanvas" viewBox="0 0 760 480" preserveAspectRatio="xMidYMid meet"></svg>
@@ -353,8 +409,18 @@
               <button type="button" onclick="sandboxZoom(1.25)" aria-label="Zoom in">+</button>
               <button type="button" onclick="sandboxZoom(0.8)" aria-label="Zoom out">&minus;</button>
             </div>
+            <div class="sim-indicator" id="simIndicator">
+              <span class="sim-weather-icon" id="simWeatherIcon">&#9728;</span>
+              <span id="simDayLabel">Day 1</span>
+              <div class="sim-battery"><div class="sim-battery-fill" id="simBatteryFill"></div></div>
+              <span id="simBatteryPct">50%</span>
+            </div>
           </div>
           <p class="hint" id="sandboxCounts" style="margin-top:8px;"></p>
+          <div class="robot-job-picker" id="robotJobPicker">
+            <p class="rjp-title" id="rjpTitle">Robot job</p>
+            <div class="rjp-row" id="rjpButtons"></div>
+          </div>
         </div>
 
         <div class="panel config-panel" id="fertilizerPanel" style="display:none;">
@@ -405,6 +471,7 @@
 
   <footer>field · plateau · floodplain · island — designed climates, no real-world coordinates</footer>
 </div>
+<div id="printSpec" class="print-only"></div>
 
 <script>
 // ============================================================
@@ -464,6 +531,20 @@ const ROBOT_TIERS = [
   { key: "basic", name: "Basic tiller-bot", load_kw_each: 0.3, cost_each: 2500,  upkeep_pct: 0.06 },
   { key: "multi", name: "Multi-task bot",   load_kw_each: 0.5, cost_each: 18000, upkeep_pct: 0.03 },
 ];
+
+// Robot jobs — a light layer on top of the tier system, not a second economy.
+// Each job nudges that one unit's load and cost a modest amount off the tier
+// baseline; "till" is a zero-delta no-op so an unassigned/default robot costs
+// and draws exactly what it always did (backward-compatible with every run
+// before this existed). Deltas are kept small relative to a tier's own
+// load_kw_each/cost_each on purpose — job choice is flavor + a light tradeoff,
+// not a way to break the previously grid-search-verified win balance.
+const ROBOT_JOBS = [
+  { key: "seed",    name: "Seed Drone", anim: "hop",   load_kw_delta: -0.05, cost_delta: -300 },
+  { key: "till",    name: "Tiller-bot", anim: "row",   load_kw_delta: 0,     cost_delta: 0 },
+  { key: "harvest", name: "Harvester",  anim: "pause", load_kw_delta: 0.08,  cost_delta: 700 },
+];
+const DEFAULT_ROBOT_JOB = "till";
 
 // SOLAR and BATTERY_SPEC are mutated live from the equipment panel below —
 // area_m2 / efficiency / capacity_kwh (and the derived charge/discharge rate)
@@ -827,10 +908,42 @@ function seedSandboxItems() {
 }
 function sandboxPlaceRow(type, count, startX, y) {
   for (let i = 0; i < count; i++) {
-    sandboxItems.push({ id: sandboxNextId++, type, x: startX + (i % 10) * 66, y: y + Math.floor(i / 10) * 56 });
+    const item = { id: sandboxNextId++, type, x: startX + (i % 10) * 66, y: y + Math.floor(i / 10) * 56 };
+    if (type === "robot") item.job = DEFAULT_ROBOT_JOB;
+    sandboxItems.push(item);
   }
 }
 function sandboxCount(type) { return sandboxItems.filter(i => i.type === type).length; }
+
+// ---------- robot jobs: per-unit load/cost lookup, feeding totalLoadKw() and
+// drawMoney() so a job assignment is a real economic effect, not decoration ----------
+function robotItems() { return sandboxItems.filter(i => i.type === "robot"); }
+function robotJobFor(item) {
+  return ROBOT_JOBS.find(j => j.key === (item && item.job)) || ROBOT_JOBS.find(j => j.key === DEFAULT_ROBOT_JOB);
+}
+// robots: fallback unit count used before the sandbox has been seeded (e.g. the
+// crop-selection preview) or if somehow no robot items exist yet
+function robotLoadKwTotal(robots, robotTierKey) {
+  const tier = ROBOT_TIERS.find(t => t.key === robotTierKey) || ROBOT_TIERS[0];
+  const items = robotItems();
+  if (items.length === 0) return Math.max(1, robots || 1) * tier.load_kw_each;
+  return items.reduce((s, it) => s + Math.max(0.05, tier.load_kw_each + robotJobFor(it).load_kw_delta), 0);
+}
+function robotCostTotal(robots, robotTierKey) {
+  const tier = ROBOT_TIERS.find(t => t.key === robotTierKey) || ROBOT_TIERS[0];
+  const items = robotItems();
+  if (items.length === 0) return Math.max(1, robots || 1) * tier.cost_each;
+  return items.reduce((s, it) => s + Math.max(500, tier.cost_each + robotJobFor(it).cost_delta), 0);
+}
+function robotJobBreakdown() {
+  const counts = {};
+  robotItems().forEach(it => {
+    const key = robotJobFor(it).key;
+    counts[key] = (counts[key] || 0) + 1;
+  });
+  const parts = ROBOT_JOBS.filter(j => counts[j.key]).map(j => `${counts[j.key]}× ${j.name}`);
+  return parts.length ? parts.join(", ") : `${CONFIG.robots}× (job unassigned)`;
+}
 
 // module counts -> CONFIG, the same math the sliders used to drive directly
 function syncConfigFromSandbox() {
@@ -843,9 +956,15 @@ function sandboxItemMarkup(it) {
   const icon = it.type === "solar" ? solarTopIcon(0, 0, 1.35)
     : it.type === "battery" ? batteryTopIcon(0, 0, 1.1)
     : robotTopIcon(0, 0, 1.1, (it.id % 5) * 0.2);
+  // robots get an inner animatable group: ambient idle motion (Robots: Go) and
+  // simulate-playback work motion both just set this group's transform each
+  // frame/tick, leaving the outer group's real x/y (the actual placement) alone
+  const inner = it.type === "robot"
+    ? `<g id="robotAnim-${it.id}" transform="translate(0,0)">${icon}</g>`
+    : icon;
   return `<g class="sandbox-item" data-id="${it.id}" data-type="${it.type}" transform="translate(${it.x},${it.y})" style="cursor:grab;">
     <circle r="17" fill="#000" opacity="0.001"/>
-    ${icon}
+    ${inner}
   </g>`;
 }
 
@@ -1045,15 +1164,22 @@ function sandboxOnCanvasPointerUp(evt) {
   if (!sandboxDrag || (sandboxDrag.mode !== "pan" && sandboxDrag.mode !== "item")) return;
   if (sandboxDrag.mode === "item") {
     if (!sandboxDrag.moved) {
-      // tap with no real movement — pull that item back out of the build,
-      // but never below one of each type (zero would break the ledger math)
-      const type = (sandboxItems.find(i => i.id === sandboxDrag.id) || {}).type;
-      if (type && sandboxCount(type) > 1) {
+      // tap with no real movement: a robot opens its job picker (assign a
+      // job, or remove it from there); anything else pulls straight back out
+      // of the build, same as before — but never below one of each type
+      // (zero would break the ledger math)
+      const tapped = sandboxItems.find(i => i.id === sandboxDrag.id);
+      const type = tapped && tapped.type;
+      if (type === "robot") {
+        showRobotJobPicker(sandboxDrag.id);
+      } else if (type && sandboxCount(type) > 1) {
         sandboxItems = sandboxItems.filter(i => i.id !== sandboxDrag.id);
         renderSandbox();
       }
     }
     onSandboxChange();
+  } else if (sandboxDrag.mode === "pan" && !sandboxDrag.moved) {
+    hideRobotJobPicker();
   }
   sandboxDrag = null;
 }
@@ -1088,7 +1214,9 @@ function sandboxPalettePointerDown(evt) {
       // only place it if the drop actually landed on the canvas
       if (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
         const world = sandboxPointerToWorld(e.clientX, e.clientY);
-        sandboxItems.push({ id: sandboxNextId++, type, x: world.x, y: world.y });
+        const newItem = { id: sandboxNextId++, type, x: world.x, y: world.y };
+        if (type === "robot") newItem.job = DEFAULT_ROBOT_JOB;
+        sandboxItems.push(newItem);
         renderSandbox();
         onSandboxChange();
       }
@@ -1128,6 +1256,48 @@ function onSandboxChange() {
   updateSandboxCounts();
   clearTimeout(configChangeTimer);
   configChangeTimer = setTimeout(refreshLedger, 90);
+}
+
+// ---------- robot job picker: a small popover for the one robot you just
+// tapped, letting you assign it a job (or remove it) without a full
+// drag-and-build-your-own-robot system ----------
+let selectedRobotId = null;
+function showRobotJobPicker(id) {
+  selectedRobotId = id;
+  renderRobotJobPicker();
+}
+function hideRobotJobPicker() {
+  selectedRobotId = null;
+  const el = document.getElementById("robotJobPicker");
+  if (el) el.classList.remove("open");
+}
+function renderRobotJobPicker() {
+  const panel = document.getElementById("robotJobPicker");
+  if (!panel) return;
+  const item = sandboxItems.find(i => i.id === selectedRobotId);
+  if (!item) { hideRobotJobPicker(); return; }
+  panel.classList.add("open");
+  const curJob = robotJobFor(item).key;
+  document.getElementById("rjpTitle").textContent = "This robot's job";
+  document.getElementById("rjpButtons").innerHTML =
+    ROBOT_JOBS.map(j => `<button type="button" class="rjp-btn ${j.key === curJob ? "active" : ""}"
+        onclick="assignRobotJob(${item.id}, '${j.key}')">${j.name}</button>`).join("") +
+    `<button type="button" class="rjp-btn remove" onclick="removeRobotItem(${item.id})">Remove</button>`;
+}
+function assignRobotJob(id, jobKey) {
+  const item = sandboxItems.find(i => i.id === id);
+  if (!item) return;
+  item.job = jobKey;
+  renderRobotJobPicker();
+  renderSandboxPalette();
+  onSandboxChange();
+}
+function removeRobotItem(id) {
+  if (sandboxCount("robot") <= 1) { hideRobotJobPicker(); return; } // never below one robot
+  sandboxItems = sandboxItems.filter(i => i.id !== id);
+  hideRobotJobPicker();
+  renderSandbox();
+  onSandboxChange();
 }
 
 function initSandboxCanvas() {
@@ -1240,8 +1410,7 @@ function waterGapCrops() {
 function totalLoadKw(robots, robotTierKey, fertilizerChoice, waterChoice) {
   robots = robots || 1;
   robotTierKey = robotTierKey || "basic";
-  const robotLoadEach = ROBOT_TIERS.find(t => t.key === robotTierKey).load_kw_each;
-  let sum = 0.6 + robots * robotLoadEach;
+  let sum = 0.6 + robotLoadKwTotal(robots, robotTierKey);
   selected.forEach(key => { sum += CROPS.find(c => c.key === key).load_kw; });
   if (fertilizerChoice === "onfarm" && fertilizerGapCrops().length > 0) {
     sum += COSTS.fert_onfarm_load_kw;
@@ -1383,6 +1552,7 @@ function buildLedgerView() {
 }
 
 function refreshLedger() {
+  cancelSimPlayback(); // any config change invalidates an in-flight playback
   const scene = SCENES[currentKey];
   const solarTier = SOLAR_TIERS.find(t => t.key === CONFIG.solarTier);
   const batteryTier = BATTERY_TIERS.find(t => t.key === CONFIG.batteryTier);
@@ -1395,7 +1565,6 @@ function refreshLedger() {
   BATTERY_SPEC.max_discharge_kw = CONFIG.batteryKwh * 0.33;
 
   const loadKw = totalLoadKw(CONFIG.robots, CONFIG.robotTier, CONFIG.fertilizerChoice, CONFIG.waterChoice);
-  const names = [...selected].map(k => CROPS.find(c => c.key === k).name).join(", ");
 
   document.getElementById("sceneHeroBuild").innerHTML = `<div class="cap" style="justify-content:flex-start;gap:12px;">
       <div class="name">${scene.label}</div>
@@ -1403,6 +1572,15 @@ function refreshLedger() {
     </div>`;
 
   const rows = simulateScene(currentKey, loadKw);
+  applyLedgerResults(rows, loadKw, solarTier, batteryTier, robotTier);
+}
+
+// The part that actually reveals results on screen — shared by the instant
+// path (refreshLedger, whenever config changes) and the compressed-playback
+// path (finishPlayback, at the end of Simulate) so the two never duplicate
+// this logic or drift apart.
+function applyLedgerResults(rows, loadKw, solarTier, batteryTier, robotTier) {
+  const names = [...selected].map(k => CROPS.find(c => c.key === k).name).join(", ");
   const darkHours = rows.filter(r => r.unmet > 1e-6).length;
   const minSoc = Math.min(...rows.map(r => r.soc));
   const mood = moodFor(darkHours, minSoc);
@@ -1417,6 +1595,241 @@ function refreshLedger() {
   drawWeatherLog(rows);
   drawMoney(rows, solarTier, batteryTier, robotTier, darkHours);
   drawReliability(loadKw, batteryTier);
+}
+
+// ============================================================
+// ROBOTS: GO — ambient idle animation. Cheap, decorative, no math: it just
+// makes whatever's already on the plot look alive while you're fiddling with
+// tiers, independent of running an actual Simulate pass. A light rAF loop
+// nudges each robot's own inner <g id="robotAnim-N"> transform per frame;
+// it never touches sandboxItems' real x/y, so placement/drag math is untouched.
+// ============================================================
+let robotsGoActive = false;
+let robotsGoRaf = null;
+
+function setRobotAnimTransform(id, dx, dy, rot) {
+  const el = document.getElementById("robotAnim-" + id);
+  if (el) el.setAttribute("transform", `translate(${dx.toFixed(2)},${dy.toFixed(2)}) rotate(${(rot || 0).toFixed(1)})`);
+}
+
+function animateRobotIdle(it, t) {
+  const job = robotJobFor(it).key;
+  const phase = (it.id % 7) * 0.5;
+  if (job === "seed") {
+    // hops between rows
+    const hop = Math.abs(Math.sin((t + phase) * 3)) * 6;
+    setRobotAnimTransform(it.id, Math.sin((t + phase) * 1.5) * 9, -hop, 0);
+  } else if (job === "harvest") {
+    // pauses at plants, small settle motion
+    const settle = Math.sin((t + phase) * 1.1);
+    setRobotAnimTransform(it.id, settle > 0.5 ? 6 : 0, 0, 0);
+  } else {
+    // tiller: steady back-and-forth along the row
+    setRobotAnimTransform(it.id, Math.sin((t + phase) * 1.0) * 13, 0, 0);
+  }
+}
+
+function startRobotsGoLoop() {
+  const start = (typeof performance !== "undefined" && performance.now) ? performance.now() : Date.now();
+  function frame(now) {
+    if (!robotsGoActive) return;
+    const t = ((now || Date.now()) - start) / 1000;
+    robotItems().forEach(it => animateRobotIdle(it, t));
+    robotsGoRaf = requestAnimationFrame(frame);
+  }
+  robotsGoRaf = requestAnimationFrame(frame);
+}
+function stopRobotsGoLoop() {
+  if (robotsGoRaf !== null) { cancelAnimationFrame(robotsGoRaf); robotsGoRaf = null; }
+  robotItems().forEach(it => setRobotAnimTransform(it.id, 0, 0, 0));
+}
+function toggleRobotsGo() {
+  robotsGoActive = !robotsGoActive;
+  const btn = document.getElementById("robotsGoBtn");
+  if (btn) { btn.textContent = robotsGoActive ? "Robots: Stop" : "Robots: Go"; btn.classList.toggle("active", robotsGoActive); }
+  if (robotsGoActive) { cancelSimPlayback(); startRobotsGoLoop(); } else { stopRobotsGoLoop(); }
+}
+
+// ============================================================
+// SIMULATE — compressed, faithful playback of a real multi-day
+// simulateScene() run. Real hourly playback would be unwatchably slow (or,
+// sped up enough to watch, unreadable), so the actual Monte-Carlo-style data
+// is computed up front exactly as the instant path already does, then played
+// back on a fixed per-day clock: robots do their job's animation, the
+// sun/weather indicator and battery gauge follow the real per-hour values
+// from that data, and only once playback finishes do the stats/charts/win
+// banner update — via applyLedgerResults(), the same function the instant
+// path uses, so there is exactly one place that logic lives.
+// ============================================================
+let simPlaybackTimer = null;
+let simPlaybackActive = false;
+const SIM_MS_PER_DAY = 650; // real ms per simulated day of playback (spec range: ~300-1000ms/day)
+
+function cancelSimPlayback() {
+  if (simPlaybackTimer !== null) { clearTimeout(simPlaybackTimer); simPlaybackTimer = null; }
+  simPlaybackActive = false;
+  const ind = document.getElementById("simIndicator");
+  if (ind) { ind.style.display = "none"; ind.classList.remove("night"); }
+  const btn = document.getElementById("simulateBtn");
+  if (btn) { btn.disabled = false; btn.textContent = "Simulate"; }
+  robotItems().forEach(it => setRobotAnimTransform(it.id, 0, 0, 0));
+}
+
+function updateSimIndicator(row, dayIdx, totalDays) {
+  const wrap = document.getElementById("simIndicator");
+  const wIcon = document.getElementById("simWeatherIcon");
+  const dayLabel = document.getElementById("simDayLabel");
+  const fill = document.getElementById("simBatteryFill");
+  const pct = document.getElementById("simBatteryPct");
+  const isNight = row.h < 6 || row.h >= 18;
+  if (wrap) wrap.classList.toggle("night", isNight && !row.stormy);
+  if (wIcon) wIcon.innerHTML = row.stormy ? "&#9928;" : (isNight ? "&#127769;" : "&#9728;");
+  if (dayLabel) dayLabel.textContent = `Day ${dayIdx + 1}/${totalDays} · ${String(row.h).padStart(2, "0")}:00`;
+  const capacity = BATTERY_SPEC.capacity_kwh || 1;
+  const socPct = Math.max(0, Math.min(100, Math.round((row.soc / capacity) * 100)));
+  if (fill) fill.style.width = socPct + "%";
+  if (pct) pct.textContent = socPct + "%";
+}
+
+// job-specific work motion for one playback tick — paused (no offset) on an
+// hour that left load unmet, since a starved farm's robots aren't out working
+function animateRobotWork(it, row, hourIdx) {
+  const job = robotJobFor(it).key;
+  const working = row.unmet <= 1e-6;
+  if (!working) { setRobotAnimTransform(it.id, 0, 0, 0); return; }
+  const phase = it.id % 7;
+  if (job === "seed") {
+    setRobotAnimTransform(it.id, ((hourIdx + phase) % 4) * 6 - 9, (hourIdx % 2 === 0) ? -8 : 0, 0);
+  } else if (job === "harvest") {
+    setRobotAnimTransform(it.id, ((hourIdx + phase) % 3 === 0) ? 0 : 6, 0, 0);
+  } else {
+    setRobotAnimTransform(it.id, (((hourIdx + phase) % 12) - 6) * 2.3, 0, 0);
+  }
+}
+
+function groupRowsByDay(rows) {
+  const days = [];
+  let dayRows = [];
+  let curDay = rows.length ? rows[0].day : 0;
+  rows.forEach(r => {
+    if (r.day !== curDay) { days.push(dayRows); dayRows = []; curDay = r.day; }
+    dayRows.push(r);
+  });
+  if (dayRows.length) days.push(dayRows);
+  return days;
+}
+
+function runSimulatePlayback() {
+  if (!currentKey) return;
+  cancelSimPlayback(); // repeated presses cleanly restart rather than stack timers
+  if (robotsGoActive) { robotsGoActive = false; stopRobotsGoLoop();
+    const goBtn = document.getElementById("robotsGoBtn");
+    if (goBtn) { goBtn.textContent = "Robots: Go"; goBtn.classList.remove("active"); }
+  }
+
+  const solarTier = SOLAR_TIERS.find(t => t.key === CONFIG.solarTier);
+  const batteryTier = BATTERY_TIERS.find(t => t.key === CONFIG.batteryTier);
+  const robotTier = ROBOT_TIERS.find(t => t.key === CONFIG.robotTier);
+  SOLAR.area_m2 = CONFIG.solarM2;
+  SOLAR.efficiency = solarTier.efficiency;
+  BATTERY_SPEC.capacity_kwh = CONFIG.batteryKwh;
+  BATTERY_SPEC.max_charge_kw = CONFIG.batteryKwh * 0.33;
+  BATTERY_SPEC.max_discharge_kw = CONFIG.batteryKwh * 0.33;
+  const loadKw = totalLoadKw(CONFIG.robots, CONFIG.robotTier, CONFIG.fertilizerChoice, CONFIG.waterChoice);
+  // the exact same real dataset the instant path computes — playback is a
+  // faithful visualization of this, not a separate decorative animation
+  const rows = simulateScene(currentKey, loadKw);
+  const days = groupRowsByDay(rows);
+
+  simPlaybackActive = true;
+  const btn = document.getElementById("simulateBtn");
+  if (btn) { btn.disabled = true; btn.textContent = "Simulating…"; }
+  const ind = document.getElementById("simIndicator");
+  if (ind) ind.style.display = "flex";
+
+  let di = 0;
+  function playDay() {
+    if (!simPlaybackActive) return;
+    if (di >= days.length) { finishPlayback(rows, loadKw, solarTier, batteryTier, robotTier); return; }
+    playHour(days[di], 0);
+  }
+  function playHour(dayRows, hi) {
+    if (!simPlaybackActive) return;
+    if (hi >= dayRows.length) { di++; simPlaybackTimer = setTimeout(playDay, 0); return; }
+    const row = dayRows[hi];
+    updateSimIndicator(row, di, days.length);
+    robotItems().forEach(it => animateRobotWork(it, row, hi));
+    const hourMs = Math.max(4, SIM_MS_PER_DAY / Math.max(1, dayRows.length));
+    simPlaybackTimer = setTimeout(() => playHour(dayRows, hi + 1), hourMs);
+  }
+  playDay();
+}
+
+function finishPlayback(rows, loadKw, solarTier, batteryTier, robotTier) {
+  simPlaybackActive = false;
+  simPlaybackTimer = null;
+  const ind = document.getElementById("simIndicator");
+  if (ind) { ind.style.display = "none"; ind.classList.remove("night"); }
+  const btn = document.getElementById("simulateBtn");
+  if (btn) { btn.disabled = false; btn.textContent = "Simulate"; }
+  robotItems().forEach(it => setRobotAnimTransform(it.id, 0, 0, 0));
+  applyLedgerResults(rows, loadKw, solarTier, batteryTier, robotTier);
+}
+
+// ============================================================
+// PRINT FARM SPEC — a print-only summary built from the same CONFIG/
+// currentRun state everything else on screen already uses (no recomputation
+// of the ledger here). @media print in the stylesheet hides everything else
+// and shows only #printSpec.
+// ============================================================
+function buildPrintSpecHtml() {
+  if (!currentKey || !currentRun) {
+    return `<h1>Tillwatt Farm Spec</h1><p class="ps-sub">Build a farm and run it to a result first, then print.</p>`;
+  }
+  const scene = SCENES[currentKey];
+  const solarTier = SOLAR_TIERS.find(t => t.key === CONFIG.solarTier);
+  const batteryTier = BATTERY_TIERS.find(t => t.key === CONFIG.batteryTier);
+  const robotTier = ROBOT_TIERS.find(t => t.key === CONFIG.robotTier);
+  const cropNames = [...selected].map(k => (CROPS.find(c => c.key === k) || {}).name || k).join(", ") || "—";
+  const r = currentRun;
+  const robotCount = sandboxCount("robot") || CONFIG.robots;
+  const solarCount = sandboxCount("solar");
+  const batteryCount = sandboxCount("battery");
+
+  return `
+    <h1>Tillwatt Farm Spec</h1>
+    <p class="ps-sub">Printed ${new Date().toLocaleDateString()} — a designed-climate build, not a real-world site plan; everything below is what it takes to lay this one out.</p>
+    <h2>Site</h2>
+    <p>${scene.label} — sun ${scene.sun}/10, wind ${scene.wind}/10, storm ${scene.storm}/10, fertility ${scene.fertility}/10, water ${scene.water}/10, temp range ${scene.temp[0]} to ${scene.temp[1]}°C</p>
+    <h2>Crops</h2>
+    <p>${cropNames}</p>
+    <h2>Equipment</h2>
+    <table class="ps-table">
+      <tr><td>Solar</td><td>${solarCount} module${solarCount === 1 ? "" : "s"} · ${CONFIG.solarM2} m² total · ${solarTier.name} (${Math.round(solarTier.efficiency * 100)}% eff, $${solarTier.cost_per_m2}/m²)</td></tr>
+      <tr><td>Battery</td><td>${batteryCount} module${batteryCount === 1 ? "" : "s"} · ${CONFIG.batteryKwh} kWh total · ${batteryTier.name} (${batteryTier.cycle_life} cycles, $${batteryTier.cost_per_kwh}/kWh)</td></tr>
+      <tr><td>Robots</td><td>${robotCount} unit${robotCount === 1 ? "" : "s"} · ${robotTier.name} · jobs: ${robotJobBreakdown()}</td></tr>
+      <tr><td>Fertilizer</td><td>${CONFIG.fertilizerChoice === "onfarm" ? "Built on-farm (automated)" : "Imported (manual, ongoing)"}</td></tr>
+      <tr><td>Water</td><td>${CONFIG.waterChoice === "irrigation" ? "Piped irrigation (automated)" : "Hauled (manual, ongoing)"}</td></tr>
+    </table>
+    <h2>Cost &amp; payback</h2>
+    <table class="ps-table">
+      <tr><td>Solar capex</td><td>${fmtMoney(r.capexSolar || 0)}</td></tr>
+      <tr><td>Battery capex</td><td>${fmtMoney(r.capexBattery || 0)}</td></tr>
+      <tr><td>Robot capex</td><td>${fmtMoney(r.capexRobots || 0)}</td></tr>
+      <tr><td>Fertilizer/water capex</td><td>${fmtMoney((r.capexFertilizer || 0) + (r.capexWater || 0))}</td></tr>
+      <tr><td>Total to build</td><td>${fmtMoney(r.capexTotal || 0)}</td></tr>
+      <tr><td>Annual upkeep</td><td>${fmtMoney(r.annualUpkeep || 0)}/yr</td></tr>
+      <tr><td>Payback</td><td>${isFinite(r.paybackYears) ? r.paybackYears.toFixed(1) + " years" : "never"}</td></tr>
+      <tr><td>Dark hours</td><td>${r.darkHours != null ? r.darkHours + " h" : "—"}</td></tr>
+      <tr><td>Status</td><td>${r.won ? "WIN — " + r.rank : "Not yet winning — " + r.rank}</td></tr>
+    </table>
+    <p class="ps-foot">Claimed placeholder economics — order-of-magnitude only, not sourced. Tillwatt is a designed-climate simulator; nothing here names a real place.</p>
+  `;
+}
+function printFarmSpec() {
+  const el = document.getElementById("printSpec");
+  if (el) el.innerHTML = buildPrintSpecHtml();
+  window.print();
 }
 
 function drawReliability(loadKw, batteryTier) {
@@ -1444,7 +1857,7 @@ function fmtMoney(n) {
 function drawMoney(rows, solarTier, batteryTier, robotTier, darkHours) {
   const capexSolar = CONFIG.solarM2 * solarTier.cost_per_m2;
   const capexBattery = CONFIG.batteryKwh * batteryTier.cost_per_kwh;
-  const capexRobots = CONFIG.robots * robotTier.cost_each;
+  const capexRobots = robotCostTotal(CONFIG.robots, CONFIG.robotTier);
   const gapCrops = fertilizerGapCrops();
   const fertOnFarm = CONFIG.fertilizerChoice === "onfarm" && gapCrops.length > 0;
   const capexFertilizer = fertOnFarm ? COSTS.fert_onfarm_capex : 0;
@@ -1495,6 +1908,7 @@ function drawMoney(rows, solarTier, batteryTier, robotTier, darkHours) {
     capexTotal, solarTier, batteryTier, robotTier,
     gapCropsLen: gapCrops.length, fertOnFarm,
     waterGapLen: waterGap.length, waterAuto,
+    capexSolar, capexBattery, capexRobots, capexFertilizer, capexWater, annualUpkeep,
   });
 }
 
@@ -1578,6 +1992,8 @@ function updateWinAndRank(paybackYears, darkHours, extra) {
     scene: currentKey, crops: [...selected], solarTier: extra.solarTier.key, batteryTier: extra.batteryTier.key,
     robotTier: extra.robotTier.key, solarM2: CONFIG.solarM2, batteryKwh: CONFIG.batteryKwh, robots: CONFIG.robots,
     fertilizerChoice: CONFIG.fertilizerChoice, waterChoice: CONFIG.waterChoice, achievements: earned,
+    capexSolar: extra.capexSolar, capexBattery: extra.capexBattery, capexRobots: extra.capexRobots,
+    capexFertilizer: extra.capexFertilizer, capexWater: extra.capexWater, annualUpkeep: extra.annualUpkeep,
   };
   document.getElementById("submitBtn").disabled = !won;
 }
@@ -1743,6 +2159,11 @@ function buildStepper() {
 
 // ---------- stage router ----------
 function goToStage(next) {
+  if (next !== "build") {
+    cancelSimPlayback();
+    if (robotsGoActive) { robotsGoActive = false; stopRobotsGoLoop(); }
+    hideRobotJobPicker();
+  }
   stage = next;
   visited.add(next);
   document.querySelectorAll(".stage").forEach(el => el.classList.remove("active"));
