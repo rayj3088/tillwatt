@@ -373,7 +373,7 @@
           <span class="win-label" id="winLabel">Break-even</span>
           <span class="win-value" id="winValue">—</span>
         </div>
-        <div class="win-target">target: ≤1 year, &lt;15 dark hrs</div>
+        <div class="win-target">target: ≤4.5 years, &lt;15 dark hrs</div>
       </div>
       <p class="win-explain">This is the number that decides if you've won. Everything below is how you move it — switch tabs to adjust what you're building, see what it costs, or check how it holds up.</p>
 
@@ -391,8 +391,10 @@
           <div class="money-item"><span class="ml">Solar</span><span class="mv" id="capSolar">$0</span></div>
           <div class="money-item"><span class="ml">Battery</span><span class="mv" id="capBattery">$0</span></div>
           <div class="money-item"><span class="ml">Robots</span><span class="mv" id="capRobots">$0</span></div>
+          <div class="money-item"><span class="ml">Install &amp; wiring</span><span class="mv" id="capInstall">$0</span></div>
           <div class="money-item total"><span class="ml">Total to build</span><span class="mv" id="capTotal">$0</span></div>
           <div class="money-item"><span class="ml">Upkeep</span><span class="mv" id="capUpkeep">$0/yr</span></div>
+          <div class="money-item"><span class="ml">Battery replacements</span><span class="mv" id="capBattSwap">$0/yr</span></div>
         </div>
         <p class="payback-line" id="paybackText"></p>
       </div>
@@ -488,10 +490,12 @@
 // an island short on fresh water, a floodplain with plenty but at flood risk,
 // an open field sitting at a comfortable baseline.
 const SCENES = {
-  field:      { label: "Open Field",       sun: 7, wind: 4, storm: 3, temp: [-5, 30], fertility: 6, water: 6 },
-  plateau:    { label: "Mountain Plateau",  sun: 8, wind: 7, storm: 5, temp: [-15, 22], fertility: 3, water: 2 },
-  floodplain: { label: "River Floodplain",  sun: 6, wind: 3, storm: 6, temp: [2, 34], fertility: 9, water: 9 },
-  island:     { label: "Coastal Island",    sun: 8, wind: 8, storm: 4, temp: [15, 32], fertility: 5, water: 3 },
+  // season: share of the simulated (good-season) output this place averages
+  // across a whole year — colder, darker winters cut it harder
+  field:      { label: "Open Field",       sun: 7, wind: 4, storm: 3, temp: [-5, 30], fertility: 6, water: 6, season: 0.72 },
+  plateau:    { label: "Mountain Plateau",  sun: 8, wind: 7, storm: 5, temp: [-15, 22], fertility: 3, water: 2, season: 0.62 },
+  floodplain: { label: "River Floodplain",  sun: 6, wind: 3, storm: 6, temp: [2, 34], fertility: 9, water: 9, season: 0.78 },
+  island:     { label: "Coastal Island",    sun: 8, wind: 8, storm: 4, temp: [15, 32], fertility: 5, water: 3, season: 0.88 },
 };
 
 // fert_min joins sun_min/wind_max/storm_tol/temp as a fifth Liebig factor —
@@ -519,9 +523,9 @@ const SOLAR_TIERS = [
   { key: "high",     name: "High-efficiency",   efficiency: 0.28, cost_per_m2: 340, upkeep_pct: 0.012 },
 ];
 const BATTERY_TIERS = [
-  { key: "lead", name: "Lead-acid",   cycle_life: 500,  calendar_life_years: 5,  cost_per_kwh: 90,  upkeep_pct: 0.05 },
-  { key: "nmc",  name: "Lithium NMC", cycle_life: 3000, calendar_life_years: 10, cost_per_kwh: 400, upkeep_pct: 0.018 },
-  { key: "lfp",  name: "LFP",         cycle_life: 6000, calendar_life_years: 15, cost_per_kwh: 480, upkeep_pct: 0.01 },
+  { key: "lead", name: "Lead-acid",   cycle_life: 500,  calendar_life_years: 5,  cost_per_kwh: 90,  upkeep_pct: 0.05, usable: 0.5 },
+  { key: "nmc",  name: "Lithium NMC", cycle_life: 3000, calendar_life_years: 10, cost_per_kwh: 400, upkeep_pct: 0.018, usable: 0.9 },
+  { key: "lfp",  name: "LFP",         cycle_life: 6000, calendar_life_years: 15, cost_per_kwh: 480, upkeep_pct: 0.01, usable: 0.95 },
 ];
 const ROBOT_TIERS = [
   { key: "basic", name: "Basic tiller-bot", load_kw_each: 0.3, cost_each: 2500,  upkeep_pct: 0.06 },
@@ -576,6 +580,11 @@ const COSTS = {
   water_haul_per_crop_per_year: 160,
   water_irrigation_capex: 3800,
   water_irrigation_load_kw: 0.45,
+  // Real-world factors that make break-even hard, not free:
+  install_pct: 0.20,              // inverters, wiring, electrician on top of hardware
+  install_per_m2_solar: 60,       // racking + labor scale with panel AREA, which rewards efficient panels
+  battery_cycles_per_year: 300,   // near-daily cycling wears batteries out
+  downtime_loss_per_dark_share: 3, // lost harvest: each 1% of hours dark costs ~3% of the year's value
 };
 
 // Mirrors engine/wear.py's rate models — see that file for why these are the shape they are.
@@ -1089,7 +1098,10 @@ function batteryConnected(batteryId) {
   return sandboxConnections.some(c => c.batteryId === batteryId);
 }
 function connectedBatteryKwh() {
-  return sandboxItems.filter(i => i.type === "battery" && batteryConnected(i.id)).length * BATTERY_MODULE_KWH;
+  // usable, not nameplate: lead-acid only safely gives ~half its rating
+  // (deeper discharges wreck it); lithium gives ~90-95%
+  return sandboxItems.filter(i => i.type === "battery" && batteryConnected(i.id))
+    .reduce((sum, b) => sum + BATTERY_MODULE_KWH * ((BATTERY_TIERS.find(t => t.key === b.tier) || BATTERY_TIERS[0]).usable || 1), 0);
 }
 // A robot is "powered" only if it has an assigned recharge battery AND that
 // battery is itself wired to at least one solar item. No assignment, a
@@ -2521,10 +2533,9 @@ function fmtMoney(n) {
   return "$" + Math.round(n).toLocaleString();
 }
 
-function drawMoney(rows, solarTier, batteryTier, robotTier, darkHours) {
-  // solarTier/batteryTier are now the blended solarAggregate()/batteryAggregate()
-  // objects — .capex is already the sum of each placed item's own tier cost,
-  // not one global tier times a total size.
+// Pure economics — no DOM — so the page and the balance search share one truth.
+function farmEconomics(rows, solarTier, batteryTier, robotTier, darkHours) {
+  const scene = SCENES[currentKey] || SCENES.field;
   const capexSolar = solarTier.capex;
   const capexBattery = batteryTier.capex;
   const capexRobots = robotCostTotal(CONFIG.robots, CONFIG.robotTier);
@@ -2534,51 +2545,66 @@ function drawMoney(rows, solarTier, batteryTier, robotTier, darkHours) {
   const waterGap = waterGapCrops();
   const waterAuto = CONFIG.waterChoice === "irrigation" && waterGap.length > 0;
   const capexWater = waterAuto ? COSTS.water_irrigation_capex : 0;
-  const capexTotal = capexSolar + capexBattery + capexRobots + capexFertilizer + capexWater;
+  const capexHardware = capexSolar + capexBattery + capexRobots + capexFertilizer + capexWater;
+  const capexInstall = capexHardware * COSTS.install_pct + CONFIG.solarM2 * COSTS.install_per_m2_solar;
+  const capexTotal = capexHardware + capexInstall;
 
-  document.getElementById("capSolar").textContent = fmtMoney(capexSolar);
-  document.getElementById("capBattery").textContent = fmtMoney(capexBattery);
-  document.getElementById("capRobots").textContent = fmtMoney(capexRobots);
-  document.getElementById("capTotal").textContent = fmtMoney(capexTotal);
+  const annualUpkeep = solarTier.upkeep + batteryTier.upkeep + capexRobots * robotTier.upkeep_pct;
+  // batteries die of whichever comes first: age, or cycles used up
+  const batteryLifeYears = capexBattery > 0
+    ? Math.max(0.5, Math.min(batteryTier.calendar_life_years, batteryTier.cycle_life / COSTS.battery_cycles_per_year))
+    : Infinity;
+  const batteryReplacePerYear = capexBattery > 0 ? capexBattery / batteryLifeYears : 0;
 
-  // Upkeep: a real ongoing cost, not just a one-time build price — cheaper
-  // tiers carry a higher upkeep_pct, so "Bare Minimum" gear is cheap to buy
-  // and expensive to keep running. Taken off every year, same as fertilizer/water.
-  const annualUpkeep = solarTier.upkeep + batteryTier.upkeep
-    + capexRobots * robotTier.upkeep_pct;
-  document.getElementById("capUpkeep").textContent = fmtMoney(annualUpkeep) + "/yr";
+  const servedKwhPerDay = rows.reduce((s, r) => s + r.served, 0) / SIM_DAYS;
+  const peakAnnualValue = servedKwhPerDay * 365 * COSTS.off_grid_displacement_per_kwh;
+  const seasonalValue = peakAnnualValue * scene.season;
+  const darkShare = darkHours / (SIM_DAYS * 24);
+  const downtimeLossPct = Math.min(0.9, darkShare * COSTS.downtime_loss_per_dark_share);
+  const grossAnnualValue = seasonalValue * (1 - downtimeLossPct);
 
-  const servedKwhTotal = rows.reduce((s, r) => s + r.served, 0);
-  const servedKwhPerDay = servedKwhTotal / SIM_DAYS;
-  const grossAnnualValue = servedKwhPerDay * 365 * COSTS.off_grid_displacement_per_kwh;
-  const fertImportPerYear = (!fertOnFarm && gapCrops.length > 0)
-    ? COSTS.fert_import_per_crop_per_year * gapCrops.length : 0;
-  const waterHaulPerYear = (!waterAuto && waterGap.length > 0)
-    ? COSTS.water_haul_per_crop_per_year * waterGap.length : 0;
-  const netAnnualValue = grossAnnualValue - fertImportPerYear - waterHaulPerYear - annualUpkeep;
+  const fertImportPerYear = (!fertOnFarm && gapCrops.length > 0) ? COSTS.fert_import_per_crop_per_year * gapCrops.length : 0;
+  const waterHaulPerYear = (!waterAuto && waterGap.length > 0) ? COSTS.water_haul_per_crop_per_year * waterGap.length : 0;
+  const netAnnualValue = grossAnnualValue - fertImportPerYear - waterHaulPerYear - annualUpkeep - batteryReplacePerYear;
   const paybackYears = netAnnualValue > 0 ? capexTotal / netAnnualValue : Infinity;
+  return { scene, capexSolar, capexBattery, capexRobots, capexFertilizer, capexWater, capexInstall, capexTotal,
+    annualUpkeep, batteryLifeYears, batteryReplacePerYear, servedKwhPerDay, peakAnnualValue, seasonalValue,
+    downtimeLossPct, grossAnnualValue, fertImportPerYear, waterHaulPerYear, netAnnualValue, paybackYears,
+    gapCrops, fertOnFarm, waterGap, waterAuto };
+}
 
-  const paybackText = isFinite(paybackYears)
-    ? `<b>${paybackYears.toFixed(1)} years</b> to break even`
-    : `no break-even — upkeep, fertilizer and water cost more than the energy is worth`;
-  const fertLine = fertImportPerYear > 0
-    ? ` Importing fertilizer costs ${fmtMoney(fertImportPerYear)}/yr, taken off that before payback.`
-    : "";
-  const waterLine = waterHaulPerYear > 0
-    ? ` Hauling water costs ${fmtMoney(waterHaulPerYear)}/yr, taken off that before payback.`
-    : "";
+function drawMoney(rows, solarTier, batteryTier, robotTier, darkHours) {
+  const e = farmEconomics(rows, solarTier, batteryTier, robotTier, darkHours);
+  document.getElementById("capSolar").textContent = fmtMoney(e.capexSolar);
+  document.getElementById("capBattery").textContent = fmtMoney(e.capexBattery);
+  document.getElementById("capRobots").textContent = fmtMoney(e.capexRobots);
+  document.getElementById("capInstall").textContent = fmtMoney(e.capexInstall);
+  document.getElementById("capTotal").textContent = fmtMoney(e.capexTotal);
+  document.getElementById("capUpkeep").textContent = fmtMoney(e.annualUpkeep) + "/yr";
+  document.getElementById("capBattSwap").textContent = fmtMoney(e.batteryReplacePerYear) + "/yr";
 
+  const paybackText = isFinite(e.paybackYears)
+    ? `<b>${e.paybackYears.toFixed(1)} years</b> to break even`
+    : `<b>no break-even</b> — running costs eat everything the energy is worth`;
+  const extras = [];
+  if (e.fertImportPerYear > 0) extras.push(`importing fertilizer ${fmtMoney(e.fertImportPerYear)}/yr`);
+  if (e.waterHaulPerYear > 0) extras.push(`hauling water ${fmtMoney(e.waterHaulPerYear)}/yr`);
+  const lifeTxt = e.batteryLifeYears < 3 ? ` (these batteries only last about ${e.batteryLifeYears.toFixed(1)} years at daily cycling)` : "";
   document.getElementById("paybackText").innerHTML =
-    `Serving ${servedKwhPerDay.toFixed(1)} kWh/day here displaces about <b>${fmtMoney(grossAnnualValue)}/yr</b> ` +
-    `of diesel/propane generation, at an assumed $${COSTS.off_grid_displacement_per_kwh.toFixed(2)}/kWh — the honest comparison for a farm with no grid connection. ` +
-    `Upkeep on this gear runs <b>${fmtMoney(annualUpkeep)}/yr</b> — cheaper tiers cost less to build but more to keep running.${fertLine}${waterLine} ` +
-    `Against a ${fmtMoney(capexTotal)} build, that's ${paybackText} — before counting what the crops themselves are worth.`;
+    `At peak season this farm serves ${e.servedKwhPerDay.toFixed(1)} kWh/day — worth ${fmtMoney(e.peakAnnualValue)}/yr against diesel at $${COSTS.off_grid_displacement_per_kwh.toFixed(2)}/kWh. ` +
+    `Winter here cuts that to ${Math.round(e.scene.season * 100)}%` +
+    (e.downtimeLossPct > 0.005 ? `, and dark hours cost another ${Math.round(e.downtimeLossPct * 100)}% in lost work` : "") +
+    `, leaving <b>${fmtMoney(e.grossAnnualValue)}/yr</b>. ` +
+    `Out of that comes upkeep ${fmtMoney(e.annualUpkeep)}/yr and battery replacements ${fmtMoney(e.batteryReplacePerYear)}/yr${lifeTxt}` +
+    (extras.length ? `, plus ${extras.join(" and ")}` : "") + `. ` +
+    `Against a ${fmtMoney(e.capexTotal)} build (installation included), that's ${paybackText}.`;
 
-  updateWinAndRank(paybackYears, darkHours, {
-    capexTotal, solarTier, batteryTier, robotTier,
-    gapCropsLen: gapCrops.length, fertOnFarm,
-    waterGapLen: waterGap.length, waterAuto,
-    capexSolar, capexBattery, capexRobots, capexFertilizer, capexWater, annualUpkeep,
+  updateWinAndRank(e.paybackYears, darkHours, {
+    capexTotal: e.capexTotal, solarTier, batteryTier, robotTier,
+    gapCropsLen: e.gapCrops.length, fertOnFarm: e.fertOnFarm,
+    waterGapLen: e.waterGap.length, waterAuto: e.waterAuto,
+    capexSolar: e.capexSolar, capexBattery: e.capexBattery, capexRobots: e.capexRobots,
+    capexFertilizer: e.capexFertilizer, capexWater: e.capexWater, annualUpkeep: e.annualUpkeep,
   });
 }
 
@@ -2586,7 +2612,10 @@ function drawMoney(rows, solarTier, batteryTier, robotTier, darkHours) {
 // build "wins" on paper while failing most of the day), so a real win needs
 // BOTH the money target AND a live, working farm. Same rule the constant
 // tuning was grid-searched against — see the git history for that pass.
-const WIN_PAYBACK_YEARS = 1.0;
+// Re-tuned after adding installation, battery wear and usable capacity,
+// winter, and downtime losses: 4.5 years is beaten by ~1.5% of possible builds
+// (island easiest, field winnable, plateau tough, floodplain out of reach).
+const WIN_PAYBACK_YEARS = 4.5;
 const WIN_MAX_DARK_HOURS = 15;
 
 function isWinningBuild(paybackYears, darkHours) {
@@ -2614,9 +2643,9 @@ function updateWinBanner(paybackYears, darkHours) {
 // needs to parse "1.4 years" to know they're close. darkHours gates it the
 // same way it gates the win itself: a starved build can't rank up on payback alone.
 const RANKS = [
-  { key: "fence-keeper",    title: "Fence-Keeper",     max: 1.0  },
-  { key: "self-sufficient", title: "Self-Sufficient",  max: 1.5  },
-  { key: "off-grid",        title: "Off-Grid",         max: 3.0  },
+  { key: "fence-keeper",    title: "Fence-Keeper",     max: 4.5  },
+  { key: "self-sufficient", title: "Self-Sufficient",  max: 6.0  },
+  { key: "off-grid",        title: "Off-Grid",         max: 9.0  },
   { key: "homesteader",     title: "Homesteader",      max: Infinity },
 ];
 function rankFor(paybackYears, darkHours) {
