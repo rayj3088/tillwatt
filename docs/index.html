@@ -122,6 +122,17 @@
   .config-row label { font-size: 12.5px; font-weight: 600; }
   .config-row input[type=range] { width: 100%; accent-color: var(--accent); }
   .config-row .val { font-size: 12px; color: var(--sub); text-align: right; font-variant-numeric: tabular-nums; }
+
+  .money-panel .config-title { display: flex; justify-content: space-between; align-items: baseline; }
+  .money-panel .claimed-tag { text-transform: none; letter-spacing: 0; font-weight: 500; color: var(--sub); font-size: 10.5px; }
+  .money-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 16px; margin-bottom: 12px; }
+  .money-item { display: flex; justify-content: space-between; font-size: 13px; padding: 2px 0; }
+  .money-item .ml { color: var(--sub); }
+  .money-item .mv { font-variant-numeric: tabular-nums; font-weight: 600; }
+  .money-item.total { grid-column: 1 / -1; border-top: 1px solid var(--line); padding-top: 8px; margin-top: 2px; }
+  .money-item.total .mv { font-size: 16px; font-family: "Space Grotesk", sans-serif; }
+  .payback-line { font-size: 12.5px; color: var(--sub); line-height: 1.5; }
+  .payback-line b { color: var(--ink); }
   .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: var(--sub); margin-bottom: 10px; }
   .legend span { display: inline-flex; align-items: center; gap: 6px; }
   .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
@@ -200,6 +211,17 @@
         </div>
       </div>
 
+      <div class="panel money-panel">
+        <p class="config-title">Money <span class="claimed-tag">claimed estimates — not sourced yet</span></p>
+        <div class="money-grid">
+          <div class="money-item"><span class="ml">Solar</span><span class="mv" id="capSolar">$0</span></div>
+          <div class="money-item"><span class="ml">Battery</span><span class="mv" id="capBattery">$0</span></div>
+          <div class="money-item"><span class="ml">Robots</span><span class="mv" id="capRobots">$0</span></div>
+          <div class="money-item total"><span class="ml">Total to build</span><span class="mv" id="capTotal">$0</span></div>
+        </div>
+        <p class="payback-line" id="paybackText"></p>
+      </div>
+
       <div class="panel">
         <div class="legend">
           <span><i class="dot" style="background:var(--solar)"></i>solar produced</span>
@@ -251,6 +273,10 @@ const BATTERY_SPEC = { capacity_kwh: 60.0, round_trip_eff: 0.90, max_charge_kw: 
 const SIM_DAYS = 10;
 const SEED = 1;
 const CONFIG = { solarM2: 100, batteryKwh: 60, robots: 1 };
+
+// Claimed unit-cost placeholders — order-of-magnitude only, need a SOURCES.csv row
+// before they count as more than "claimed" (same convention as engine/parts.py).
+const COSTS = { solar_per_m2: 220, battery_per_kwh: 400, robot_each: 8000, grid_rate_per_kwh: 0.15 };
 
 let currentKey = null;
 let selected = new Set();
@@ -611,6 +637,36 @@ function refreshLedger() {
 
   drawChart(rows);
   drawStats(rows, loadKw);
+  drawMoney(rows, CONFIG);
+}
+
+function fmtMoney(n) {
+  return "$" + Math.round(n).toLocaleString();
+}
+
+function drawMoney(rows, cfg) {
+  const capexSolar = cfg.solarM2 * COSTS.solar_per_m2;
+  const capexBattery = cfg.batteryKwh * COSTS.battery_per_kwh;
+  const capexRobots = cfg.robots * COSTS.robot_each;
+  const capexTotal = capexSolar + capexBattery + capexRobots;
+
+  document.getElementById("capSolar").textContent = fmtMoney(capexSolar);
+  document.getElementById("capBattery").textContent = fmtMoney(capexBattery);
+  document.getElementById("capRobots").textContent = fmtMoney(capexRobots);
+  document.getElementById("capTotal").textContent = fmtMoney(capexTotal);
+
+  const servedKwhTotal = rows.reduce((s, r) => s + r.served, 0);
+  const servedKwhPerDay = servedKwhTotal / SIM_DAYS;
+  const annualAvoidedCost = servedKwhPerDay * 365 * COSTS.grid_rate_per_kwh;
+  const paybackYears = annualAvoidedCost > 0 ? capexTotal / annualAvoidedCost : Infinity;
+  const paybackText = isFinite(paybackYears)
+    ? `<b>${paybackYears.toFixed(1)} years</b> to break even`
+    : `no break-even — it isn't serving any load`;
+
+  document.getElementById("paybackText").innerHTML =
+    `Serving ${servedKwhPerDay.toFixed(1)} kWh/day here would cost about <b>${fmtMoney(annualAvoidedCost)}/yr</b> ` +
+    `from a grid connection, at an assumed $${COSTS.grid_rate_per_kwh.toFixed(2)}/kWh. Against a ${fmtMoney(capexTotal)} build, ` +
+    `that's ${paybackText} — before counting what the crops themselves are worth.`;
 }
 
 function drawStats(rows, loadKw) {
