@@ -691,6 +691,28 @@
   .bn-btns { display: flex; gap: 6px; flex-wrap: wrap; }
   .bn-learn { font-size: 13.5px; line-height: 1.45; background: #262019; border-left: 3px solid #f2b705; padding: 8px 10px; border-radius: 6px; margin: 12px 0 8px; }
   .bn-under { font-size: 12px; color: #a89c80; } .bn-under summary { cursor: pointer; }
+  .bn-dock { position: sticky; top: 0; z-index: 5; background: #17130e; padding: 6px 0 8px; border-bottom: 1px solid #3a3226; margin-bottom: 8px; }
+  .bn-src { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .bn-src button { font: 700 13px Inter, sans-serif; padding: 7px 12px; border-radius: 999px; border: 2px solid #eee6d4; background: transparent; color: #eee6d4; cursor: pointer; }
+  .bn-src button.on { background: #f2b705; color: #2a2100; border-color: #f2b705; }
+  .bn-dock-nums { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .bn-dock-nums span { background: #262019; border-radius: 10px; padding: 7px 9px; font-size: 11px; color: #a89c80; text-transform: uppercase; letter-spacing: .04em; }
+  .bn-dock-nums b { display: block; font: 700 19px "Space Grotesk", sans-serif; color: #f2b705; text-transform: none; letter-spacing: 0; }
+  .bn-dock-nums em { display: block; font-style: normal; text-transform: none; letter-spacing: 0; font-size: 11px; color: #cfc4a8; }
+  .bn-dock-nums b.up, .bn-fx .up { color: #7fd6ae; } .bn-dock-nums b.dn, .bn-fx .dn { color: #ff9b86; } .bn-dock-nums b.bn-t-g { color: #7fd6ae; } .bn-dock-nums b.bn-t-m { color: #f2c14e; } .bn-dock-nums b.bn-t-r { color: #ff9b86; }
+  .bn-dock-go { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 8px; font-size: 12.5px; }
+  .bn-dock-go p { margin: 0; }
+  .bn-go { font: 700 13px Inter, sans-serif; padding: 8px 14px; border-radius: 10px; border: 2px solid #eee6d4; background: transparent; color: #eee6d4; cursor: pointer; white-space: nowrap; }
+  .bn-go.primary { background: #f2b705; color: #2a2100; border-color: #f2b705; }
+  .bn-flow { margin: 10px 0; } .bn-flow-row { display: grid; grid-template-columns: 116px 1fr 40px; gap: 8px; align-items: center; font-size: 12px; margin: 4px 0; } .bn-flow-row b { text-align: right; font-variant-numeric: tabular-nums; }
+  .bn-flow-row span { color: #cfc4a8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bn-stage { margin: 12px 0; } .bn-stage-h { font: 700 12px Inter, sans-serif; text-transform: uppercase; letter-spacing: .04em; color: #cfc4a8; margin-bottom: 6px; } .bn-stage-h i { font-style: normal; margin-right: 6px; } .bn-stage-h em { font-style: normal; text-transform: none; letter-spacing: 0; color: #a89c80; margin-left: 8px; font-weight: 500; }
+  .bn-opts-b { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 6px; }
+  .bn-opts-b button { text-align: left; border-radius: 12px; padding: 8px 10px; display: block; }
+  .bn-opts-b i { font-style: normal; font-size: 18px; display: block; } .bn-opts-b b { font-size: 13px; display: block; } .bn-opts-b small { font-size: 11px; color: #cfc4a8; font-weight: 500; display: block; }
+  .bn-opts-b button.on small { color: #2a2100; } .bn-opts-b small .up { color: #7fd6ae; font-weight: 700; } .bn-opts-b small .dn { color: #ff9b86; font-weight: 700; } .bn-opts-b small .same { color: #a89c80; }
+  .bn-tip { font-size: 12px; line-height: 1.4; color: #a89c80; margin: 5px 0 0; } .bn-fx { margin: 0; }
+  .bn-mini { margin: 6px 0 0; padding-left: 18px; font-size: 12.5px; line-height: 1.45; }
   .bn-card { background: #211c15; border: 1px solid #3a3226; border-radius: 14px; padding: 12px; margin-bottom: 10px; }
   .bn-card-h { display: flex; align-items: baseline; gap: 8px; } .bn-card-h i { font-style: normal; font-size: 22px; } .bn-card-h b { font-size: 16px; } .bn-card-h span { font-size: 12px; color: #a89c80; }
   .bn-lim-ctl { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 6px 14px; margin: 8px 0; }
@@ -1003,13 +1025,13 @@ function renewableExtras(sceneKey, weather, seed) {
   if (GEN.windKw <= 0 && GEN.hydroKw <= 0) return { wind, hydro };
   const scene = SCENES[sceneKey];
   const rng = makeRng((seed === undefined ? SEED : seed) + 7919);
-  const cf = Math.min(0.35, WIND.base_cf * scene.wind / 5);
-  let curDay = -1, dayLevel = cf, hydroDay = HYDRO.cf;
+  const cf = Math.min(0.35, WIND.base_cf * scene.wind / 5 * CHAINX.wind.eta);
+  let curDay = -1, dayLevel = cf, hydroDay = HYDRO.cf * CHAINX.water.eta;
   weather.forEach(([, , stormy, day], h) => {
     if (day !== curDay) {
       curDay = day;
       dayLevel = cf * (0.3 + 1.4 * rng()) * (stormy ? 2.0 : 1.0); // windy, gusty storm days
-      hydroDay = HYDRO.cf * (0.85 + 0.3 * rng());                  // river flow barely moves day to day
+      hydroDay = HYDRO.cf * CHAINX.water.eta * (0.85 + 0.3 * rng());                  // river flow barely moves day to day
     }
     wind[h] = GEN.windKw * Math.min(1, dayLevel * (0.6 + 0.8 * rng()));
     hydro[h] = GEN.hydroKw * Math.min(1, hydroDay);
@@ -1387,7 +1409,7 @@ let connectDraft = null;        // { type: "solar"|"battery", id } — first end
 // batteries on the bank pad, conduit to the charge dock, robots on the crop
 // rows. No hand placement, no dragging, no wiring by hand: every battery is
 // fed by the array and every robot charges at the dock, always. ----------
-const FARM = { solarTier: "std", batteryTier: "lfp", wind: 0, hydro: 0, sunSync: false, jobs: {}, inventions: [], picks: {} };
+const FARM = { solarTier: "std", batteryTier: "lfp", wind: 0, hydro: 0, sunSync: false, jobs: {}, inventions: [], picks: {}, chains: {} };
 // Player-built machines. Each: { id, name, jobs: {harvest:true,...}, cost, kw, share (0-1 of
 // each chosen job per unit), count, ownSolar }. Upkeep on a prototype: 5% of cost a year.
 const INVENTION_UPKEEP_PCT = 0.05;
@@ -1663,7 +1685,7 @@ function setJob(job, key) {
 }
 
 // ---------- plans: evaluate any build without touching the drawn farm ----------
-function solarAggFor(n) { const t = SOLAR_TIERS[0], capex = n * SOLAR_MODULE_M2 * t.cost_per_m2; return { key: t.key, name: t.name, efficiency: t.efficiency, cost_per_m2: t.cost_per_m2, capex, upkeep: capex * t.upkeep_pct }; }
+function solarAggFor(n) { const t = SOLAR_TIERS[0], capex = n * SOLAR_MODULE_M2 * t.cost_per_m2 * CHAINX.sun.cost; return { key: t.key, name: t.name, efficiency: t.efficiency * CHAINX.sun.eta, cost_per_m2: t.cost_per_m2, capex, upkeep: capex * t.upkeep_pct }; }
 function batteryAggFor(n) { const t = BATTERY_TIERS[0], capex = n * BATTERY_MODULE_KWH * t.cost_per_kwh; return { key: t.key, name: t.name, cycle_life: t.cycle_life, calendar_life_years: t.calendar_life_years, cost_per_kwh: t.cost_per_kwh, capex, upkeep: capex * t.upkeep_pct }; }
 function planNow() { const c = farmCounts(); return { solar: c.solar, battery: c.battery, wind: FARM.wind, hydro: FARM.hydro, sunSync: FARM.sunSync, jobs: { ...FARM.jobs } }; }
 function evalPlan(plan, seed) {
@@ -1963,7 +1985,7 @@ function renderFarmControls() {
   renderJobsPackage();
   const el = document.getElementById("farmControls");
   if (!el) return;
-  const c = farmCounts(), S = SOLAR_TIERS[0], Bt = BATTERY_TIERS[0], kwEach = SOLAR_MODULE_M2 * S.efficiency;
+  const c = farmCounts(), S = SOLAR_TIERS[0], Bt = BATTERY_TIERS[0], kwEach = SOLAR_MODULE_M2 * solarEff();
   const card = (type, title, sub, note) => `
     <div class="farm-card">
       <div class="farm-card-head">
@@ -1988,11 +2010,15 @@ function renderFarmControls() {
     (hydroAllowed(currentKey)
       ? genCard("hydro", "&#128167; Micro-hydro", FARM.hydro, HYDRO.cap, `${FARM.hydro * HYDRO.unit_kw} kW on the river`,
           `$${HYDRO.cost_per_kw.toLocaleString()}/kW installed &middot; runs ~50% of rated, day and night`)
-      : `<div class="farm-card"><div class="farm-card-title">&#128167; Micro-hydro</div><div class="farm-card-sub">Needs a river. Only the River Floodplain has one.</div></div>`);
+      : `<div class="farm-card"><div class="farm-card-title">&#128167; Micro-hydro</div><div class="farm-card-sub">Needs a river. Only the River Floodplain has one.</div></div>`) + benchDesignsCard();
+}
+function benchDesignsCard() {
+  const ch = FARM.chains || {}, list = Object.keys(ch).map(t => `<li><b>${CHAIN_DEFS[t].icon} ${escapeHtml(ch[t].name)}</b> — power ×${ch[t].etaMult.toFixed(2)}, cost ×${ch[t].costMult.toFixed(2)} · ready ${ch[t].trl}/9</li>`).join("");
+  return `<div class="farm-card"><div class="farm-card-title">&#128295; Your own designs</div><div class="farm-card-sub">Build a better turbine, panel or water wheel on the Bench, then put it here.</div>${list ? `<ul class="bn-mini">${list}</ul>` : ""}<div class="sandbox-toolbar"><button type="button" class="toolbar-btn primary" onclick="openBenchBuild()">&#9879; Design on the Bench</button></div></div>`;
 }
 
 function seedSandboxItems() {
-  FARM.wind = 0; FARM.hydro = 0; FARM.sunSync = false; FARM.jobs = defaultJobs(); FARM.inventions = []; FARM.picks = {};
+  FARM.wind = 0; FARM.hydro = 0; FARM.sunSync = false; FARM.jobs = defaultJobs(); FARM.inventions = []; FARM.picks = {}; FARM.chains = {}; syncChains();
   if (typeof rsReset === "function") rsReset();
   hudPrev = null; hudAction = null; hudHistory.length = 0;
   { const h = document.getElementById("hudHistory"); if (h) h.innerHTML = "";
@@ -3217,7 +3243,7 @@ function applyLedgerResults(rows, loadKw, solarTier, batteryTier, robotTier) {
   document.getElementById("moodLine").textContent = mood.text;
   const prof = farmLoadProfile();
   document.getElementById("drawLine").innerHTML =
-    `${mood.sub} Growing <b>${names}</b> on ${(CONFIG.solarM2 * SOLAR_TIERS[0].efficiency).toFixed(0)} kW of solar and ${CONFIG.batteryKwh.toFixed(0)} kWh of batteries. ` +
+    `${mood.sub} Growing <b>${names}</b> on ${(CONFIG.solarM2 * solarEff()).toFixed(0)} kW of solar and ${CONFIG.batteryKwh.toFixed(0)} kWh of batteries. ` +
     `The farm needs <b>${prof.fixed.toFixed(1)} kW</b> around the clock for the crops, plus <b>${prof.flex.toFixed(1)} kW</b> of machine power ${FARM.sunSync ? "packed into sunny hours (8am–4pm)" : "spread around the clock"}.`;
 
   drawChart(rows);
@@ -3576,6 +3602,10 @@ const RS_PARAMS = [
     base: () => HYDRO.cf, lo: () => 0.4, hi: () => 0.6, fmt: v => Math.round(v * 100) + "%", set: v => rsSet(HYDRO, "cf", v) },
   { key: "hydroom", label: "Micro-hydro upkeep", status: "sourced", src: "irena", note: "1–6% a year", applies: () => GEN.hydroKw > 0,
     base: () => HYDRO.om_pct, lo: () => 0.01, hi: () => 0.06, fmt: v => Math.round(v * 100) + "%/yr", set: v => rsSet(HYDRO, "om_pct", v) },
+  { key: "chcost", label: "Your bench designs: cost", status: "research", mult: true, applies: chainsActive, note: "Modules nobody has sold yet usually cost more than planned.",
+    lo: () => invRange(chainTrl(), "cost")[0], hi: () => invRange(chainTrl(), "cost")[1], set: m => rsChain("cost", m) },
+  { key: "cheta", label: "Your bench designs: output", status: "research", mult: true, applies: chainsActive, note: "First-of-a-kind modules usually deliver less than planned.",
+    lo: () => invRange(chainTrl(), "share")[0], hi: () => invRange(chainTrl(), "share")[1], set: m => rsChain("eta", m) },
   { key: "icost", label: "Invention build cost", status: "research", inv: "cost", applies: () => FARM.inventions.length > 0,
     note: "Nothing like it is sold yet. Less-ready ideas get wider ranges; first-of-a-kind machines usually cost more than planned." },
   { key: "ishare", label: "How much of the job the invention really does", status: "research", inv: "share", applies: () => FARM.inventions.length > 0 },
@@ -3653,7 +3683,7 @@ const RS_KG_CO2_PER_GAL = 10.18, RS_KWH_PER_GAL = 9;
 function rsWeatherSeed(seed, i) { return 20000 + seed * 1000 + i; }
 function rsSig() {
   return JSON.stringify([currentKey, [...selected], CONFIG, GEN, FARM.jobs, FARM.sunSync, sandboxItems.map(i => [i.type, i.tier, i.job]),
-    FARM.inventions.map(i => [i.job, i.cost, i.cover, i.up, i.trl]), RESEARCH.seed]);
+    FARM.inventions.map(i => [i.job, i.cost, i.cover, i.up, i.trl]), FARM.chains, RESEARCH.seed]);
 }
 function rsCompute() {
   if (!currentKey) return null;
@@ -3940,6 +3970,7 @@ const RS_CHECK = [
   ["built", "Cash flow, IRR and a borrowed-money test"],
   ["built", "Weather spread over 60 samples; diesel burned and avoided"],
   ["built", "Side-by-side builds and a lab notebook that separates real changes from luck"],
+  ["built", "Bench designs: build your own turbine, panel or water wheel from modules"],
   ["part", "Weather is 10-day samples, not multi-year"],
   ["part", "Financing has a loan payment, but no taxes or incentives"],
   ["part", "Emissions count diesel avoided, not the carbon in making panels and batteries"],
@@ -4088,6 +4119,7 @@ function buildPrintSpecHtml() {
       ${row("Solar", `${(CONFIG.solarM2 * solarTier.efficiency).toFixed(0)} kW · $${(SOLAR_TIERS[0].cost_per_m2 / SOLAR_W_PER_M2).toFixed(2)}/W installed`)}
       ${row("Battery", `${CONFIG.batteryKwh.toFixed(0)} kWh usable · LFP · $${BATTERY_TIERS[0].cost_per_kwh}/kWh installed`)}
       ${row("Wind / micro-hydro", `${FARM.wind * WIND.unit_kw} kW / ${GEN.hydroKw} kW`)}
+      ${Object.keys(FARM.chains || {}).map(t => row("Bench design", `${escapeHtml(CHAIN_DEFS[t].name)} (${escapeHtml(FARM.chains[t].parts)}) · power ×${FARM.chains[t].etaMult.toFixed(2)}, cost ×${FARM.chains[t].costMult.toFixed(2)} vs a standard build · readiness ${FARM.chains[t].trl}/9 (estimate)`)).join("")}
       ${L.rows.map(r => row(escapeHtml(r.name), `${Math.round(r.total).toLocaleString()} h/yr · ${r.cover > 0 ? pct(r.cover) + " by " + escapeHtml(r.who.join(", ").toLowerCase()) : "by hand"}`)).join("")}
       ${FARM.inventions.map(i => row("Invention", `${escapeHtml(i.name)}${i.parts ? " (" + escapeHtml(i.parts) + ")" : ""} · readiness ${i.trl}/9 · about ${fmtMoney(i.cost)} (estimate) · ${i.kw} kW`)).join("")}
       ${row("Demand", `${prof.fixed.toFixed(1)} kW crop base power around the clock + ${prof.flex.toFixed(1)} kW machine charging ${FARM.sunSync ? "packed into 8am–4pm" : "around the clock"}`)}
@@ -4165,8 +4197,8 @@ function farmEconomics(rows, solarTier, batteryTier, _unused, darkHours) {
   const capexSolar = solarTier.capex, capexBattery = batteryTier.capex;
   const capexMachines = opts.filter(o => !o.inv).reduce((s, o) => s + o.cost, 0);
   const capexInventions = opts.filter(o => o.inv).reduce((s, o) => s + o.cost, 0);
-  const capexWind = FARM.wind * WIND.unit_kw * WIND.cost_per_kw;
-  const capexHydro = GEN.hydroKw * HYDRO.cost_per_kw;
+  const capexWind = FARM.wind * WIND.unit_kw * WIND.cost_per_kw * CHAINX.wind.cost;
+  const capexHydro = GEN.hydroKw * HYDRO.cost_per_kw * CHAINX.water.cost;
   const capexTotal = capexSolar + capexBattery + capexWind + capexHydro + capexMachines + capexInventions;
 
   const upkeepPower = solarTier.upkeep + batteryTier.upkeep + FARM.wind * WIND.unit_kw * WIND.om_per_kw_yr + capexHydro * HYDRO.om_pct;
@@ -4412,7 +4444,7 @@ function updateWinAndRank(paybackYears, darkHours, extra) {
 
   currentRun = {
     won, rank: rank.title, paybackYears, darkHours, capexTotal: extra.capexTotal, autoPct: Math.round(autoPct),
-    scene: currentKey, crops: [...selected], solarKw: Math.round(CONFIG.solarM2 * SOLAR_TIERS[0].efficiency), batteryKwh: Math.round(CONFIG.batteryKwh),
+    scene: currentKey, crops: [...selected], solarKw: Math.round(CONFIG.solarM2 * solarEff()), batteryKwh: Math.round(CONFIG.batteryKwh),
     wind: FARM.wind, hydro: FARM.hydro, sunSync: FARM.sunSync, jobs: { ...FARM.jobs }, achievements: earned,
     inventions: FARM.inventions.map(i => ({ job: i.job, approach: i.key, trl: i.trl, cost: i.cost })),
   };
@@ -4888,14 +4920,15 @@ const LIM = {
 };
 
 // ---- bench screen ----
-const BN = { tab: "swing", raf: 0, last: 0, slow: false, P: {}, S: {}, mags: [0], lastUi: 0, sweep: null, sweepTimer: 0, drag: -1 };
-const BN_TABS = [["swing", "🧲 Swing"], ["shake", "📳 Shake"], ["well", "⚪ Well"], ["limits", "🌍 Limits"]];
+const BN = { tab: "swing", build: { type: "wind", picks: {} }, raf: 0, last: 0, slow: false, P: {}, S: {}, mags: [0], lastUi: 0, sweep: null, sweepTimer: 0, drag: -1 };
+const BN_TABS = [["swing", "🧲 Swing"], ["shake", "📳 Shake"], ["well", "⚪ Well"], ["limits", "🌍 Limits"], ["build", "🔧 Build"]];
 const BN_CTL = { swing: SW_CTL, shake: SH_CTL, well: WL_CTL };
 const BN_HOOK = {
   swing: "Swing a magnet past a coil. Motion becomes current — and the current pushes back.",
   shake: "Shake a magnet between two magnets. Match its natural speed to catch the most.",
   well: "Roll a steel ball near magnets. Can the field give you energy for free?",
   limits: "Every way of making power has a ceiling set by physics. Slide the inputs, see the ceiling.",
+  build: "Chain modules from wind, sun or water to the farm's wires. Every module trades power, cost and readiness — and physics caps each one.",
 };
 const BN_LEDGER_COL = { load: "#f2b705", coil: "#e0662b", air: "#7ec8e3", pivot: "#9a9a9a", rub: "#9a9a9a", stored: "#7a4fd6", ke: "#7a4fd6" };
 function bnDefaults(tab) { const P = {}; (BN_CTL[tab] || []).forEach(c => { P[c.k] = c.val; }); return P; }
@@ -4921,7 +4954,7 @@ function bnTab(tab) {
     <div class="bn-top"><b class="bn-title">⚗ Bench</b><button type="button" class="bn-done" onclick="closeBench()">Done</button></div>
     <div class="bn-tabs">${BN_TABS.map(t => `<button type="button" class="${t[0] === tab ? "on" : ""}" onclick="bnTab('${t[0]}')">${t[1]}</button>`).join("")}</div>
     <p class="bn-hook">${BN_HOOK[tab]}</p>
-    ${tab === "limits" ? `<div id="bnLimits"></div>` : `<canvas id="bnCanvas" width="720" height="${tab === "well" ? 460 : 380}"></canvas>
+    ${tab === "limits" ? `<div id="bnLimits"></div>` : tab === "build" ? `<div id="bnBuild"></div>` : `<canvas id="bnCanvas" width="720" height="${tab === "well" ? 460 : 380}"></canvas>
     <div class="bn-meter" id="bnMeter"></div><div class="bn-ledger" id="bnLedger"></div>
     ${tab === "shake" ? `<canvas id="bnCurve" width="720" height="120"></canvas>` : ""}
     <div class="bn-ctl" id="bnCtl"></div>
@@ -4931,6 +4964,7 @@ function bnTab(tab) {
   </div>`;
   cancelAnimationFrame(BN.raf); BN.raf = 0;
   if (tab === "limits") { bnLimits(); return; }
+  if (tab === "build") { bnBuild(); return; }
   bnReset(tab); bnControls(tab); bnButtons(tab);
   if (tab === "shake") bnCurve();
   const cv = document.getElementById("bnCanvas");
@@ -4941,6 +4975,7 @@ const BN_UNDER = {
   swing: "Real dipole field of the magnet (μ = Br·V/μ₀), flux summed over the coil disk, EMF = −N·dΦ/dt, coil resistance from wire length, air drag ½ρC<sub>d</sub>Av², pivot friction, and Lenz braking taken out of the swing as exactly the electrical energy made. Left out: coil inductance and eddy currents.",
   shake: "Two repelling dipoles give a force ∝ 1/d⁴, a stiff nonlinear magnetic spring. The rig is shaken with a sine acceleration; input is the work the shaking force does. Same coil physics as Swing, one or two coils. Left out: coil inductance and eddy currents.",
   well: "A steel ball is pulled toward magnets by an induced-dipole energy U ∝ −B², B ∝ 1/r³. It rolls (rotational inertia 2/5·mr² included) with a rolling-resistance loss. The field is conservative: what it lends going in, it takes back going out.",
+  build: "Every module has an efficiency (the fraction it passes on) and a physics ceiling. A chain multiplies them, so what reaches the wires is the product; the rest leaves as heat. Cost is each module's share of a standard build, so the default chain matches the farm's sourced price. Readiness is the least-ready module. On the farm, output and cost scale by the ratio to a standard build.",
   limits: "Ceilings: Betz 16/27 for a wind rotor; Shockley–Queisser 33.7% for a single-junction solar cell (1.34 eV gap); Carnot 1 − Tc/Th, and the thermoelectric efficiency from figure of merit ZT; falling water ρ·g·Q·H; fuel cell ΔG/ΔH = 237.1/285.8 for hydrogen and oxygen. 'Typical' values are round-number estimates for real hardware.",
 };
 function bnControls(tab) {
@@ -5104,6 +5139,129 @@ function bnFrame(ts) {
   if (tab === "swing") bnDrawSwing(ctx, W, H, S); else if (tab === "shake") bnDrawShake(ctx, W, H, S); else bnDrawWell(ctx, W, H, S);
   if (ts - BN.lastUi > 120) { BN.lastUi = ts; bnUi(); }
   BN.raf = requestAnimationFrame(bnFrame);
+}
+// ---- Build: power chains made of modules ----
+// Five ideas hold the whole thing together:
+//  1. Energy is conserved: each module passes on a fraction (its efficiency); the rest leaves as heat.
+//  2. Each module has a physics ceiling (Betz, Shockley–Queisser). No option beats it.
+//  3. A chain multiplies: what reaches the wires is the product of every module's fraction.
+//  4. Cost is relative: every part is a share of a standard build, so a default chain matches the farm's sourced price.
+//  5. A chain is only as ready as its least-ready module.
+// Module numbers are estimates unless a source is shown; the ceilings are physics.
+const CHAINX = { wind: { eta: 1, cost: 1 }, sun: { eta: 1, cost: 1 }, water: { eta: 1, cost: 1 } };
+const solarEff = () => SOLAR_TIERS[0].efficiency * CHAINX.sun.eta;
+const CH_GEN = { key: "gen", label: "Generator", icon: "🧲", share: 0.15, ceil: 1, opts: [
+  { key: "ind", name: "Induction", icon: "🌀", eta: 0.92, c: 1, trl: 9, tip: "Cheap and tough. Runs on plain copper and steel (estimate)." },
+  { key: "pm", name: "Permanent magnet", icon: "🧲", eta: 0.95, c: 1.3, trl: 9, tip: "Strong magnets waste less, but they use rare-earth metals (estimate)." },
+  { key: "fer", name: "Ferrite magnet", icon: "🟫", eta: 0.93, c: 1.05, trl: 6, tip: "Cheap magnets with no rare earths. Bigger and heavier for the same power (estimate)." } ] };
+const CH_POWER = { key: "pwr", label: "Electronics", icon: "🔌", share: 0.10, ceil: 1, opts: [
+  { key: "std", name: "Standard inverter", icon: "🔌", eta: 0.96, c: 1, trl: 9, tip: "NREL's PVWatts assumes 96% for a typical inverter (secondary source)." },
+  { key: "hi", name: "High-efficiency inverter", icon: "⚡", eta: 0.985, c: 1.5, trl: 8, tip: "Wide-bandgap chips lose less, at a higher price (estimate)." } ] };
+const CHAIN_DEFS = {
+  wind: { icon: "🌬", name: "Wind turbine", carries: "The wind carries", fixed: 0.15, unit: "wind", ceilName: "Betz limit", stages: [
+    { key: "rotor", label: "Rotor", icon: "🌬", share: 0.45, ceil: 16 / 27, opts: [
+      { key: "two", name: "2 small blades", icon: "🌬", eta: 0.35, c: 1, trl: 9, tip: "Small turbines catch about 35% of the wind's power (estimate)." },
+      { key: "three", name: "3 tuned blades", icon: "🪁", eta: 0.42, c: 1.15, trl: 9, tip: "Better blade shape. Big modern rotors get near 45% (estimate)." },
+      { key: "duct", name: "Ducted rotor", icon: "🛞", eta: 0.5, c: 1.5, trl: 4, tip: "A shroud funnels more air in. Claims vary and few were tested in the field (estimate)." } ] },
+    { key: "drive", label: "Drive", icon: "⚙️", share: 0.15, ceil: 1, opts: [
+      { key: "gear", name: "Gearbox", icon: "⚙️", eta: 0.97, c: 1, trl: 9, tip: "Speeds up the slow blades. Loses about 3% and wears out (estimate)." },
+      { key: "dd", name: "Direct drive", icon: "➰", eta: 0.985, c: 1.4, trl: 8, tip: "No gearbox to break, but a bigger, pricier generator (estimate)." },
+      { key: "mag", name: "Magnetic gear", icon: "🧲", eta: 0.98, c: 1.6, trl: 4, tip: "Gears that never touch: no wear, no oil. Lab-stage (estimate)." } ] },
+    CH_GEN, CH_POWER ] },
+  sun: { icon: "☀", name: "Solar array", carries: "The sunlight carries", fixed: 0.20, unit: "sun", ceilName: "Shockley–Queisser limit", stages: [
+    { key: "cell", label: "Cell", icon: "🔆", share: 0.55, ceil: 0.337, opts: [
+      { key: "si", name: "Silicon", icon: "🔆", eta: 0.20, c: 1, trl: 9, tip: "What the farm uses now: about 20% of the sunlight (Shockley–Queisser ceiling 33.7% for one layer)." },
+      { key: "thin", name: "Thin film", icon: "🩹", eta: 0.14, c: 0.7, trl: 9, tip: "Cheaper per area, less efficient (estimate)." },
+      { key: "tandem", name: "Two-layer tandem", icon: "🥞", eta: 0.28, c: 1.6, trl: 6, tip: "Two layers catch more colors of light and can pass the one-layer ceiling. Sold panels are far less proven than lab cells (estimate)." } ] },
+    { key: "prot", label: "Losses", icon: "🧽", share: 0.15, ceil: 1, opts: [
+      { key: "std", name: "Standard array", icon: "🔩", eta: 0.86, c: 1, trl: 9, tip: "Dirt, shade and wiring cost about 14% in NREL's PVWatts default (secondary source)." },
+      { key: "clean", name: "Self-cleaning + optimizers", icon: "🧽", eta: 0.90, c: 1.2, trl: 6, tip: "Keeps panels clean and each one working at its best (estimate)." } ] },
+    CH_POWER ] },
+  water: { icon: "💧", name: "Water wheel / turbine", carries: "The falling water carries", fixed: 0.15, unit: "water", ceilName: "ρ·g·Q·H", stages: [
+    { key: "pipe", label: "Pipe", icon: "🚰", share: 0.15, ceil: 1, opts: [
+      { key: "open", name: "Long pipe", icon: "🚰", eta: 0.90, c: 1, trl: 9, tip: "Water rubs on the pipe walls (estimate)." },
+      { key: "short", name: "Short, wide pipe", icon: "🛢", eta: 0.95, c: 1.3, trl: 9, tip: "Less friction, more pipe to buy (estimate)." } ] },
+    { key: "turb", label: "Turbine", icon: "💧", share: 0.40, ceil: 1, opts: [
+      { key: "cross", name: "Crossflow", icon: "🌊", eta: 0.75, c: 1, trl: 9, tip: "Simple and rugged; a common small-hydro design (estimate)." },
+      { key: "screw", name: "Archimedes screw", icon: "🌀", eta: 0.80, c: 1.3, trl: 8, tip: "Gentle on fish and works at low drops (estimate)." },
+      { key: "vortex", name: "Vortex basin", icon: "🌪", eta: 0.70, c: 0.9, trl: 5, tip: "Very low drops, few moving parts. Few field tests (estimate)." } ] },
+    CH_GEN, CH_POWER ] },
+};
+CHAIN_DEFS.water.fixed = 0.20; // pipe .15 + turbine .40 + generator .15 + electronics .10 + fixed .20 = 1
+function chainCalc(type, picks, over) {
+  const D = CHAIN_DEFS[type], p = Object.assign({}, picks || {}, over || {});
+  const parts = D.stages.map(s => ({ s, o: s.opts.find(o => o.key === p[s.key]) || s.opts[0] }));
+  let cum = 1, ceilCum = 1, best = null;
+  const flow = parts.map(({ s, o }) => { const before = cum; cum *= o.eta; ceilCum *= s.ceil; const avoid = before * Math.max(0, s.ceil - o.eta); const r = { s, o, cum, ceilCum, avoid }; if (!best || avoid > best.avoid) best = r; return r; });
+  const base = D.stages.reduce((a, s) => a * s.opts[0].eta, 1), cost = D.fixed + parts.reduce((a, x) => a + x.s.share * x.o.c, 0);
+  return { parts, flow, eta: cum, ceil: ceilCum, etaMult: cum / base, costMult: cost, perKwh: cost / (cum / base), trl: Math.min(...parts.map(x => x.o.trl)), best };
+}
+function chainSources(type) { return type === "wind" ? FARM.wind : type === "water" ? (hydroAllowed(currentKey) ? FARM.hydro : 0) : 1; }
+function syncChains() { Object.keys(CHAINX).forEach(t => { const c = FARM.chains && FARM.chains[t]; CHAINX[t].eta = c ? c.etaMult : 1; CHAINX[t].cost = c ? c.costMult : 1; }); }
+function chainsActive() { return Object.keys(FARM.chains || {}).some(t => chainSources(t) > 0); }
+function chainTrl() { const l = Object.keys(FARM.chains || {}).filter(t => chainSources(t) > 0).map(t => FARM.chains[t].trl); return l.length ? Math.min(...l) : 5; }
+// Research: a bench design is an invention, so the less ready it is the wider its error bars.
+// The uncertain part is how far it moves from a standard build, so the range stretches that gap.
+function rsChain(kind, m) {
+  const olds = Object.keys(CHAINX).map(t => [t, CHAINX[t].eta, CHAINX[t].cost]);
+  Object.keys(FARM.chains || {}).forEach(t => {
+    const c = FARM.chains[t];
+    if (kind === "cost") CHAINX[t].cost = c.costMult >= 1 ? 1 + (c.costMult - 1) * m : 1 - (1 - c.costMult) / m;
+    else CHAINX[t].eta = c.etaMult >= 1 ? 1 + (c.etaMult - 1) * m : 1 - (1 - c.etaMult) / m;
+  });
+  return () => olds.forEach(([t, e, c]) => { CHAINX[t].eta = e; CHAINX[t].cost = c; });
+}
+function chainFarmEffect(type, calc) {
+  if (!currentKey || stage !== "build" || !chainSources(type)) return null;
+  const keep = { eta: CHAINX[type].eta, cost: CHAINX[type].cost };
+  try {
+    const now = evalPlan(planNow()).pay; CHAINX[type].eta = calc.etaMult; CHAINX[type].cost = calc.costMult;
+    return { now, withIt: evalPlan(planNow()).pay };
+  } catch (err) { return null; } finally { CHAINX[type].eta = keep.eta; CHAINX[type].cost = keep.cost; }
+}
+function bnBuildType(t) { BN.build.type = t; bnBuild(); }
+function bnBuildPick(stageKey, optKey) { const t = BN.build.type; (BN.build.picks[t] = BN.build.picks[t] || {})[stageKey] = optKey; bnBuild(); }
+function bnBuildFarm() {
+  const t = BN.build.type, D = CHAIN_DEFS[t], calc = chainCalc(t, BN.build.picks[t]);
+  if (!currentKey) return;
+  FARM.chains = FARM.chains || {};
+  if (FARM.chains[t]) { noteAction(`${D.name}: back to a standard build`); delete FARM.chains[t]; }
+  else { noteAction(`Bench design: ${D.name.toLowerCase()}`); FARM.chains[t] = { picks: Object.assign({}, BN.build.picks[t]), etaMult: calc.etaMult, costMult: calc.costMult, trl: calc.trl, name: D.name, parts: calc.parts.map(x => x.o.name).join(", ") }; }
+  syncChains();
+  if (stage === "build") { layoutFarm(farmCounts()); renderSandbox(); onSandboxChange(); renderFarmControls(); }
+  bnBuild();
+}
+function openBenchBuild(type) { BN.tab = "build"; if (type) BN.build.type = type; openBench(); }
+function bnBuild() {
+  const el = document.getElementById("bnBuild"); if (!el) return;
+  const t = BN.build.type, D = CHAIN_DEFS[t], picks = BN.build.picks[t] = BN.build.picks[t] || {}, c = chainCalc(t, picks);
+  const on = !!(FARM.chains && FARM.chains[t]), n = currentKey ? chainSources(t) : 0, fx = chainFarmEffect(t, c);
+  const pc = v => Math.round(v * 100), yr = v => isFinite(v) ? v.toFixed(1) + " yr" : "never";
+  const per = c.perKwh - 1, better = per < -0.005, worse = per > 0.005;
+  const flow = [`<div class="bn-flow-row"><span>${D.carries}</span><div class="bn-lim-bar"><i class="real" style="width:100%"></i></div><b>100%</b></div>`].concat(c.flow.map(f =>
+    `<div class="bn-flow-row"><span>${f.o.icon} ${escapeHtml(f.s.label)}</span><div class="bn-lim-bar"><i class="real" style="width:${100 * f.cum}%"></i><i class="gap" style="width:${100 * Math.max(0, f.ceilCum - f.cum)}%"></i></div><b>${pc(f.cum)}%</b></div>`)).join("");
+  const delta = (s, o) => {
+    const w = chainCalc(t, picks, { [s.key]: o.key }), dp = w.etaMult - c.etaMult, dc = w.costMult - c.costMult, dr = w.trl - c.trl;
+    const pw = Math.abs(dp) < 0.0005 ? "" : `<span class="${dp > 0 ? "up" : "dn"}">${dp > 0 ? "▲" : "▼"}${Math.abs(Math.round(dp * 100))}% power</span>`;
+    const co = Math.abs(dc) < 0.0005 ? "" : `<span class="${dc > 0 ? "dn" : "up"}">${dc > 0 ? "+" : "−"}${Math.abs(Math.round(dc * 100))}% cost</span>`;
+    const rd = dr === 0 ? "" : `<span class="${dr > 0 ? "up" : "dn"}">ready ${dr > 0 ? "+" : "−"}${Math.abs(dr)}</span>`;
+    return [pw, co, rd].filter(Boolean).join(" ") || `<span class="same">same result</span>`;
+  };
+  const stages = c.parts.map(({ s, o }) => `<div class="bn-stage"><div class="bn-stage-h"><i>${s.icon}</i>${escapeHtml(s.label)}${s.ceil < 1 ? `<em>physics max ${pc(s.ceil)}%</em>` : ""}</div>
+    <div class="bn-opts bn-opts-b">${s.opts.map(x => `<button type="button" class="${x === o ? "on" : ""}" onclick="bnBuildPick('${s.key}','${x.key}')"><i>${x.icon}</i><b>${escapeHtml(x.name)}</b><small>${x === o ? `${pc(x.eta)}% pass · ready ${x.trl}/9` : delta(s, x)}</small></button>`).join("")}</div>
+    <div class="bn-tip">${escapeHtml(o.tip)}</div></div>`).join("");
+  const farm = !currentKey ? `<p class="bn-tip">Start a farm to put this design on it.</p>`
+    : n <= 0 ? `<p class="bn-tip">${t === "wind" ? "Add a wind turbine on the farm's Power page first." : "This place has no river. Try the River Floodplain."}</p>`
+    : fx && !on ? `<p class="bn-fx">🏭 Farm break-even <b>${yr(fx.now)}</b> → <b class="${rsCap(fx.withIt) < rsCap(fx.now) - 0.05 ? "up" : rsCap(fx.withIt) > rsCap(fx.now) + 0.05 ? "dn" : ""}">${yr(fx.withIt)}</b></p>` : on ? `<p class="bn-fx">🏭 On your farm now.</p>` : "";
+  el.innerHTML = `<div class="bn-dock">
+      <div class="bn-src">${Object.keys(CHAIN_DEFS).map(k => `<button type="button" class="${k === t ? "on" : ""}" onclick="bnBuildType('${k}')">${CHAIN_DEFS[k].icon} ${CHAIN_DEFS[k].name.split(" ")[0]}</button>`).join("")}</div>
+      <div class="bn-dock-nums"><span>Reaches the wires<b>${pc(c.eta)}%</b><em>physics max ${pc(c.ceil)}%</em></span><span>Cost per kWh<b class="${better ? "up" : worse ? "dn" : ""}">${better ? "▼" : worse ? "▲" : "="} ${Math.abs(Math.round(per * 100))}%</b><em>vs a standard build</em></span><span>Ready<b class="bn-t-${c.trl >= 8 ? "g" : c.trl >= 6 ? "m" : "r"}">${c.trl}/9</b><em>weakest module</em></span></div>
+      <div class="bn-dock-go">${farm}${currentKey && n > 0 ? `<button type="button" class="bn-go ${on ? "" : "primary"}" onclick="bnBuildFarm()">${on ? "Take it off the farm" : "Put it on the farm"}</button>` : ""}</div>
+    </div>
+    <div class="bn-flow">${flow}<div class="bn-lim-nums"><span><i class="real"></i>Reaches the wires</span><span><i class="gap"></i>Physics still allows (${D.ceilName})</span></div></div>
+    <p class="bn-learn">💡 Most to gain: <b>${escapeHtml(c.best.s.label)}</b>${c.best.avoid > 0.005 ? ` — physics allows about <b>${Math.round(100 * c.best.avoid)} points</b> more of the ${t === "sun" ? "sunlight" : t === "wind" ? "wind" : "water"} here.` : " — every module is at its ceiling."}</p>
+    ${stages}
+    <p class="bn-tip">Module numbers are estimates unless a source is shown; the ceilings are physics. The less ready a module, the wider its error bars in the Research tab.</p>`;
 }
 // ---- limits ----
 const LIM_STATE = {};
