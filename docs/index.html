@@ -216,7 +216,7 @@
   .invent-solar { font-size: 12px; margin-top: 8px; }
   .invent-verdict { font-size: 12px; color: var(--ink); margin-top: 8px; line-height: 1.45; }
   .invent-add { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-  .lab { position: fixed; inset: 0; z-index: 100; background: #efe8d6; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .lab { --bg:#efe8d6; --panel:#fffdf7; --ink:#1c2420; --sub:#56605a; --line:#d6cdb4; --accent:#2b6f8f; color:#1c2420; color-scheme: light; position: fixed; inset: 0; z-index: 100; background: #efe8d6; overflow-y: auto; -webkit-overflow-scrolling: touch; }
   .lab[hidden] { display: none; }
   .lab-inner { max-width: 760px; margin: 0 auto; padding: 14px 16px 40px; color: #2f2f2f; }
   .lab-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
@@ -508,7 +508,7 @@
   .rs-table a { color: var(--accent); }
   .rs-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
   .rs-note { font-size: 11px; color: var(--sub); line-height: 1.45; margin: 4px 0 0; }
-  .rs-eq { font-size: 12.5px; line-height: 1.55; padding-left: 20px; margin: 8px 0 0; }
+  .rs-eq { font-size: 12.5px; line-height: 1.55; padding-left: 30px; margin: 8px 0 0; }
   .rs-eq li { margin-bottom: 6px; }
   .rs-eq code { font: 11.5px ui-monospace, Menlo, monospace; background: var(--bg); border: 1px solid var(--line); border-radius: 5px; padding: 1px 4px; white-space: normal; }
   .rs-limits { font-size: 12.5px; line-height: 1.5; padding-left: 18px; margin: 8px 0 0; }
@@ -610,7 +610,7 @@
   .sandbox-wrap .sim-indicator { z-index: 3; }
   .bench-btn { position: absolute; right: 0; top: 0; font: 700 13px Inter, sans-serif; padding: 8px 12px; border-radius: 999px; border: 2px solid #2f2f2f; background: #fbf7ec; color: #2f2f2f; cursor: pointer; box-shadow: 2px 2px 0 #2f2f2f; }
   header { position: relative; padding-right: 92px; }
-  .bench { position: fixed; inset: 0; z-index: 1000; overflow-y: auto; background: #17130e; color: #eee6d4; }
+  .bench { --bg:#17130e; --panel:#241d15; --ink:#eee6d4; --sub:#b8ad94; --line:#3a2f22; color-scheme: dark; position: fixed; inset: 0; z-index: 1000; overflow-y: auto; background: #17130e; color: #eee6d4; }
   .bench[hidden] { display: none; }
   .bn-inner { max-width: 760px; margin: 0 auto; padding: 12px 14px 48px; }
   .bn-top { display: flex; justify-content: space-between; align-items: center; }
@@ -2313,6 +2313,12 @@ function farmPersonMarkup(x, y, i) {
     <ellipse cx="0" cy="12" rx="6" ry="2.2" fill="#000" opacity=".2"/><rect x="-3.5" y="2" width="7" height="10" rx="2" fill="#e08a2b"/>
     <circle cx="0" cy="-1" r="3.6" fill="#f0c9a0"/><ellipse cx="0" cy="-3.4" rx="6.5" ry="1.8" fill="#d8b657"/><path d="M-3 -3.4 q3 -4 6 0" fill="#d8b657"/></g>`;
 }
+// sources behind the parts of the inventions currently on the farm
+function invSrcKeys() {
+  const ks = new Set();
+  FARM.inventions.forEach(i => { const kind = INVENT[i.job].find(k => k.key === i.key); if (!kind) return; [].concat(kind.src || []).forEach(s => ks.add(s)); wbBuild(i.job, kind).parts.forEach(x => [].concat(x.opt.src || []).forEach(s => ks.add(s))); });
+  return [...ks].filter(k => SRC[k]);
+}
 function farmInventionMarkup(inv) {
   const f = FARM_GEO.field, m = inv.avg > 0.85 ? 2 : inv.avg > 0.5 ? 1 : 0;
   const lane = k => (farmRowY(k) + farmRowY(k + 1)) / 2;
@@ -3602,7 +3608,7 @@ function rsFanSvg(r) {
     ${grid}<text x="${(pl + pw / 2).toFixed(1)}" y="${H - 1}" text-anchor="middle" class="rs-ax">years after building</text>
     <path d="${band(0, 4)}" style="fill:var(--served)" opacity=".16"/><path d="${band(1, 3)}" style="fill:var(--served)" opacity=".32"/>
     <line x1="${pl}" x2="${W - pr}" y1="${Y(0).toFixed(1)}" y2="${Y(0).toFixed(1)}" style="stroke:var(--ink)" stroke-width="1.2"/>
-    <text x="${W - pr - 2}" y="${(Y(0) - 4).toFixed(1)}" text-anchor="end" class="rs-ax">even with the old way</text>
+    <text x="${pl + 4}" y="${(Y(0) - 4).toFixed(1)}" class="rs-ax">even with the old way</text>
     <line x1="${X(WIN_PAYBACK_YEARS).toFixed(1)}" x2="${X(WIN_PAYBACK_YEARS).toFixed(1)}" y1="${pt}" y2="${pt + ph}" style="stroke:var(--unmet)" stroke-dasharray="4,3"/>
     <text x="${(X(WIN_PAYBACK_YEARS) + 3).toFixed(1)}" y="${pt + 9}" class="rs-ax" style="fill:var(--unmet)">target</text>
     <path d="M${ts.map(t => pts(2, t)).join(" L")}" fill="none" style="stroke:var(--served)" stroke-width="2"/>
@@ -3728,13 +3734,14 @@ function rsParamsHtml() {
   return `<div class="rs-scroll"><table class="rs-table"><tr><th>Number</th><th>Best guess</th><th>Range</th><th>Basis</th></tr>${rows}</table></div>`;
 }
 const RS_LIMITS = [
-  "A 10-day good-season window stands in for the year, scaled by a winter factor — not a full 8,760-hour year.",
-  "Numbers are varied independently. In the real world some move together (fuel prices and wages, for example).",
-  "No interest, inflation or financing: a dollar in year 5 counts the same as a dollar today.",
-  "Places are designed climates, not real sites.",
-  "Invention numbers are estimates anchored to research benchmarks; nothing like them is sold yet.",
-  "Crop sales aren't modeled: the ledger compares this farm with the same farm run by hand on a diesel generator.",
-  "Amber numbers are estimates. Each one is a research gap someone could close with a real measurement.",
+  "No crop yield or sales. \"Winning\" means beating diesel and hand labor, not turning a profit. Closing it needs sourced yields and prices for each crop.",
+  "One 10-day weather sample, scaled by a winter factor. Real battery sizing is set by the worst cloudy week in many years of hourly data.",
+  "Crop base power (2–4 kW per crop) is an estimate, and it swings the answer more than any other number. One metered real farm would settle it.",
+  "Machine tending time and breakdowns are guesses. Little is published on how often field robots need a person.",
+  "The old way is remote diesel. A farm on the grid pays far less per kWh, so payback there is much longer.",
+  "Numbers vary independently; in life fuel, wages and equipment prices move together.",
+  "Break-even ignores interest. The 20-year value discounts at 5.75%.",
+  "Invention prices and results are estimates; nothing like them is sold yet. Amber numbers mark where a real measurement would help most.",
 ];
 function rsNotebookHtml() {
   const L = RESEARCH.log;
@@ -3767,7 +3774,7 @@ function renderResearch() {
     <details class="rs-details" open><summary>Lab notebook — every change is an experiment</summary>${rsNotebookHtml()}</details>
     <details class="rs-details"><summary>Methods — the math behind every number</summary>${rsMethodsHtml()}</details>
     <details class="rs-details"><summary>Every uncertain number, and where it comes from</summary>${rsParamsHtml()}</details>
-    <details class="rs-details"><summary>Limits of this model</summary><ul class="rs-limits">${RS_LIMITS.map(x => `<li>${x}</li>`).join("")}</ul></details>
+    <details class="rs-details"><summary>What an expert would challenge</summary><ul class="rs-limits">${RS_LIMITS.map(x => `<li>${x}</li>`).join("")}</ul></details>
     <div class="sandbox-toolbar" style="margin-top:12px;">
       <button type="button" class="toolbar-btn" onclick="rsReseed()">Replicate: new random worlds</button>
       <button type="button" class="toolbar-btn" onclick="rsDownloadCsv()">Download data (CSV)</button>
@@ -3803,7 +3810,7 @@ function buildPrintSpecHtml() {
     <h1>Tillwatt Lab Report — ${escapeHtml(scene.label)}</h1>
     <p class="ps-sub">Printed ${new Date().toLocaleDateString()} · seed ${r.seed} · ${r.n} trials.</p>
     <h2>Abstract</h2>
-    <p class="ps-p">We simulated an automated, off-grid farm growing ${escapeHtml(cropNames)}. In the best-guess world it breaks even in ${rsYr(e.paybackYears)} with ${r.base.dark} dark hours, and machines do ${Math.round(auto)}% of the farm's ${Math.round(L.totalHrs).toLocaleString()} hours of work a year. Across ${r.n} simulated worlds with every uncertain number varied: ${escapeHtml(verdict)}${lever ? ` The number that matters most is ${escapeHtml(lever.label.toLowerCase())} (${RS_WORD[lever.status]}).` : ""}</p>
+    <p class="ps-p">We simulated an automated, off-grid farm growing ${escapeHtml(cropNames)}. In the best-guess world it breaks even in ${rsYr(e.paybackYears)} with ${r.base.dark} dark hours, and machines do ${Math.round(auto)}% of the farm's ${Math.round(L.totalHrs).toLocaleString()} hours of work a year. Varying every uncertain number across ${r.n} simulated worlds: ${escapeHtml(verdict)}${lever ? ` The number that matters most is ${escapeHtml(lever.label.toLowerCase())} (${RS_WORD[lever.status]}).` : ""}</p>
     <h2>1. Setup</h2>
     <table class="ps-table">
       ${row("Site", `${escapeHtml(scene.label)} — sun ${scene.sun}/10, wind ${scene.wind}/10, storm ${scene.storm}/10, fertility ${scene.fertility}/10, water ${scene.water}/10, ${scene.temp[0]} to ${scene.temp[1]} °C`)}
@@ -3812,7 +3819,7 @@ function buildPrintSpecHtml() {
       ${row("Battery", `${CONFIG.batteryKwh.toFixed(0)} kWh usable · LFP · $${BATTERY_TIERS[0].cost_per_kwh}/kWh installed`)}
       ${row("Wind / micro-hydro", `${FARM.wind * WIND.unit_kw} kW / ${GEN.hydroKw} kW`)}
       ${L.rows.map(r => row(escapeHtml(r.name), `${Math.round(r.total).toLocaleString()} h/yr · ${r.cover > 0 ? pct(r.cover) + " by " + escapeHtml(r.who.join(", ").toLowerCase()) : "by hand"}`)).join("")}
-      ${FARM.inventions.map(i => row("Invention", `${escapeHtml(i.name)} (${escapeHtml(i.parts || "")}) · readiness ${i.trl}/9 · about ${fmtMoney(i.cost)} (estimate) · ${i.kw} kW`)).join("")}
+      ${FARM.inventions.map(i => row("Invention", `${escapeHtml(i.name)}${i.parts ? " (" + escapeHtml(i.parts) + ")" : ""} · readiness ${i.trl}/9 · about ${fmtMoney(i.cost)} (estimate) · ${i.kw} kW`)).join("")}
       ${row("Demand", `${prof.fixed.toFixed(1)} kW crop base power around the clock + ${prof.flex.toFixed(1)} kW machine charging ${FARM.sunSync ? "packed into 8am–4pm" : "around the clock"}`)}
     </table>
     <h2>2. Methods</h2>
@@ -3844,11 +3851,11 @@ function buildPrintSpecHtml() {
     <table class="ps-table">
       ${RESEARCH.log.map(x => row(`${x.n}. ${escapeHtml(x.what)}`, `${rsYr(x.pay)} · win chance ${x.mc ? pct(x.mc.p) : "—"} · ${rsEffText(x).replace(/<[^>]+>/g, "")}`)).join("")}
     </table>
-    <h2>7. Limits</h2>
+    <h2>7. Open problems</h2>
     <ul>${RS_LIMITS.map(x => `<li>${x}</li>`).join("")}</ul>
     <h2>8. Sources</h2>
-    <ul>${[...used].map(k => `<li>${escapeHtml(RS_SRC[k][0])} — ${RS_SRC[k][1]}</li>`).join("")}</ul>
-    <p class="ps-foot">Reproduce: same build, seed ${r.seed}, ${r.n} trials. Measured numbers carry citations; estimates are marked as estimates. Tillwatt is a designed-climate simulator; nothing here names a real place.</p>
+    <ul>${[...used].map(k => `<li>${escapeHtml(RS_SRC[k][0])} — ${RS_SRC[k][1]}</li>`).join("")}${invSrcKeys().map(k => `<li>${escapeHtml(SRC[k][0])} — ${SRC[k][1]}</li>`).join("")}</ul>
+    <p class="ps-foot">Reproduce: same build, seed ${r.seed}, ${r.n} trials. Measured numbers carry citations; estimates are marked as estimates.</p>
   `;
 }
 
