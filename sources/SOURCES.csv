@@ -1,1 +1,57 @@
 number,value,unit,source_url,badge
+1,7370,USD/kW installed (small wind <=100 kW; 2023 avg),https://www.pnnl.gov/main/publications/external/technical_reports/PNNL-36057.pdf,sourced
+2,0.13,capacity factor (small wind; 2023 avg; 0.10-0.15 by region),https://www.pnnl.gov/main/publications/external/technical_reports/PNNL-36057.pdf,sourced
+3,39,USD/kW-yr O&M (distributed wind),https://atb.nrel.gov/electricity/2024/distributed_wind,sourced
+4,3400-10000,USD/kW installed (very small hydro <=1 MW),https://www.irena.org/-/media/Files/IRENA/Agency/Publication/2015/IRENA-ETSAP_Tech_Brief_E06_Hydropower.pdf,sourced
+5,0.40-0.60,capacity factor (very small hydro; 0.50 typical),https://www.irena.org/-/media/Files/IRENA/Agency/Publication/2015/IRENA-ETSAP_Tech_Brief_E06_Hydropower.pdf,sourced
+6,0.01-0.06,share of investment per yr O&M (small hydro),https://www.irena.org/-/media/Files/IRENA/Agency/Publication/2015/IRENA-ETSAP_Tech_Brief_E06_Hydropower.pdf,sourced
+7,30000,EUR before tools (electric weeding robot; Naio Oz),https://www.futurefarming.com/naio-oz-mechanical-weeding-robot-and-farmhand/,sourced
+8,10,hours per charge (Naio Oz lithium pack),https://www.naio-technologies.com/en/news/oz-weeding-robot-triples-battery-autonomy/,sourced
+9,75000-95000,EUR (solar seeding robot; FarmDroid FD20),https://www.futurefarming.com/farmdroid-fd20-automatic-seeding-and-weeding/,sourced
+10,1.6,kWh onboard storage; self-powered by onboard solar (FarmDroid FD20),https://farmdroid.com/products/farmdroid-fd20/,sourced
+11,18.58,USD/hr field worker gross wage (US; Apr 2025),https://www.nass.usda.gov/Publications/Todays_Reports/reports/fmla0525.pdf,sourced
+12,20-24,hours per acre hand thin/weed per crop (organic vegetables; 1992-93 study),https://s.giannini.ucop.edu/uploads/giannini_public/11/ac/11ace43b-fb92-4b29-9e33-f16e5c508f21/942-mixveg.pdf,sourced
+13,12990,USD base price (electric utility robot; farm-ng Amiga),https://store.farm-ng.com/products/la-maquina-amiga,sourced
+14,660,Wh per battery pack x2 (farm-ng Amiga),https://amiga.farm-ng.com/docs/hardware/charging/,sourced
+15,90000,EUR (electric autonomous tractor; Monarch MK-V; 80 kWh pack),https://www.allelectrictractors.com/product/monarch-mk-v/,sourced
+16,133,hand hours per acre harvest & pack (organic cabbage; 1992-93 study),https://s.giannini.ucop.edu/uploads/giannini_public/11/ac/11ace43b-fb92-4b29-9e33-f16e5c508f21/942-mixveg.pdf,sourced
+17,320,hand hours per acre cut/trim + grade/pack (organic cauliflower; 1992-93 study),https://s.giannini.ucop.edu/uploads/giannini_public/11/ac/11ace43b-fb92-4b29-9e33-f16e5c508f21/942-mixveg.pdf,sourced
+18,21,hand hours per acre transplant (organic cauliflower; 1992-93 study),https://s.giannini.ucop.edu/uploads/giannini_public/11/ac/11ace43b-fb92-4b29-9e33-f16e5c508f21/942-mixveg.pdf,sourced
+19,0.66,harvest success (mean of 50 harvesting robots; none commercialized),https://research.wur.nl/en/publications/harvesting-robots-for-high-value-crops-state-of-the-art-review-an/,sourced
+20,0.05,fruit damage (mean of 50 harvesting robots); peduncle damage 0.45,https://research.wur.nl/en/publications/harvesting-robots-for-high-value-crops-state-of-the-art-review-an/,sourced
+21,33,seconds cycle time per fruit (mean of 50 harvesting robots),https://research.wur.nl/en/publications/harvesting-robots-for-high-value-crops-state-of-the-art-review-an/,sourced
+22,0.971,strawberry picking success on isolated fruit; 0.05 when fully surrounded,https://www.mdpi.com/2218-6581/10/2/52,sourced
+23,600000,weeds per hour (LaserWeeder G2; 24 lasers + 24 GPUs; needs >=110 hp tractor),https://www.tomshardware.com/tech-industry/artificial-intelligence/laserweeder-packs-two-dozen-nvidia-gpus-and-lasers-to-zap-your-weed-problem-vaporizes-600-000-weeds-per-hour-with-sub-millimeter-precision-instant-laser-death-for-pesky-weeds,sourced
+24,75-200,ppm free chlorine produce wash (1.3-1.7 log reduction per minute; 200 ppm legal max; pH 6.5-7.5),https://ohioline.osu.edu/factsheet/aex-262,sourced
+25,0.3,max charge rate in C for lead-acid below freezing,https://www.batteryuniversity.com/article/bu-410-charging-at-high-and-low-temperatures/,sourced
+26,0.08-0.12,optimal wheel slip 4WD (tracks 0.02-0.04; soft soil up to 0.20; >0.15 loses 25-30% power),https://agtiretalk.com/optimized-tire-slip-best-performance/,sourced
+27,23,U.S. billion-dollar weather and climate disasters in 2025 (avg 10 days apart vs 82 days in the 1980s),https://www.climatecentral.org/climate-matters/2025-in-review,sourced
+28,28.0,nautical miles NHC mean official track forecast error at 24 h (2024); 45.4 at 48 h; 66.9 at 72 h,https://www.nhc.noaa.gov/verification/pdfs/Verification_2024.pdf,sourced
+29,3.2,USD/W DC median installed price US non-residential PV <=100 kW (2024); 20th-80th pct 2.5-4.3,https://eta-publications.lbl.gov/sites/default/files/2025-10/distributed_solar_storage-2025_data_update.pdf,sourced
+30,20,USD/kWdc-yr commercial PV O&M (2024),https://docs.nlr.gov/docs/fy25osti/92536.pdf,sourced
+31,0.19,USD/Wp PV inverter replacement; 10-yr inverter warranty (NREL O&M cost model example inputs),https://docs.nlr.gov/docs/fy20osti/74840.pdf,sourced
+32,0.5,%/yr median PV degradation rate (Jordan & Kurtz),https://docs.nlr.gov/docs/fy12osti/51664.pdf,sourced
+33,314-653,USD/kWh commercial battery storage all-in (238-445 DC block + 56-168 EPC + AC equipment; Lazard LCOE+ June 2025; sum derived),https://www.lazard.com/media/uounhon4/lazards-lcoeplus-june-2025.pdf,sourced
+34,2.5,% of capital per yr battery FOM; 85% round trip; 15-yr life (NREL ATB 2024 commercial battery storage),https://atb.nrel.gov/electricity/2024/commercial_battery_storage,sourced
+35,10,yr Li-ion calendar life in stationary use (PNNL 2022),https://www.pnnl.gov/sites/default/files/media/file/ESGC%20Cost%20Performance%20Report%202022%20PNNL-33283.pdf,sourced
+36,3.76,USD/gal US retail diesel 2024 average (3.66 in 2025),https://www.eia.gov/outlooks/steo/archives/jun25.pdf,sourced
+37,1.0-1.4,gal/h fuel use of a 30 kW diesel generator at 25-50% load (7.5-10.7 kWh/gal derived),https://www.generac.com/globalassets/products/business/stationary-generators/diesel-industrial-generators/spec-sheets/sd030-30kw-diesel-generator-specsheet.pdf,sourced
+38,0.19-0.37,USD/kWh diesel power in larger/less remote places; 0.50 to over 1 in remote Alaska,https://www.energy.gov/sites/prod/files/2019/09/f66/73355-9.pdf,sourced
+39,7.0-11.2,labor hrs/acre irrigating per crop (+1.4 preirrigate); pest mgmt 0.2 + rodent control 2.0 hrs/acre,https://s.giannini.ucop.edu/uploads/giannini_public/11/ac/11ace43b-fb92-4b29-9e33-f16e5c508f21/942-mixveg.pdf,sourced
+40,43,% labor overhead (payroll taxes insurance benefits) added to wages in UC 2024 cost study (34% in the 1992-93 vegetable study),https://coststudyfiles.ucdavis.edu/2025/07/18/AlmondOrganicNSJV%20Final%20Publish_Update.pdf,sourced
+41,3732.61,USD/acre NRCS FY2025 cost-share payment for surface drip under 5 acres (~4977/acre full cost derived at 75% share),https://www.nrcs.usda.gov/sites/default/files/2025-02/FY2025_2888%20RCPP%20LM%20Payment%20Schedule%20&%20Eligibile%20Activities.pdf,sourced
+42,500-1200,USD/acre drip irrigation system for small vegetable farms,https://ask.ifas.ufl.edu/publication/HS388,sourced
+43,8000,USD barrel washer delivered (2021) for a 3-5 acre mixed vegetable farm,https://blog.uvm.edu/cwcallah/2023/06/18/farmers-favorite-univerco-barrel-washer/,sourced
+44,8085,USD 4-unit packing line (2025 price list; brush washer 3830; root washer kit 4250),https://blog-fruit-vegetable-ipm.extension.umn.edu/2025/06/postharvest-equipment-for-small-farms.html,sourced
+45,50,% cut in washing time with a mechanical washer vs by hand (research-sample scale),https://www.ndsu.edu/fileadmin/aben/Papers/Carrot_Washer.pdf,sourced
+46,66,% average harvest success across 50 harvest robots; 33 s cycle time; 5% fruit damage,https://research.wur.nl/en/publications/harvesting-robots-for-high-value-crops-state-of-the-art-review-an/,sourced
+47,18-88,% harvest success in recent robots (sweet pepper 61% optimal / 18% commercial rows; lettuce 88% at 31.7 s),https://link.springer.com/article/10.1007/s43154-020-00034-1,sourced
+48,5.75,% USDA FSA direct farm ownership loan rate (Dec 2025),https://www.fsa.usda.gov/news-events/news/12-12-2025/usda-announces-december-2025-lending-rates-agricultural-producers,sourced
+49,20,ha of vegetables per season FarmDroid FD20 capacity,https://www.farmdroid.co.uk/fd20-robot/,sourced
+50,7,yr upper end of usual USDA FSA direct farm operating loan terms ("typically range from one to seven years"),https://www.fsa.usda.gov/resources/loans/farm-operating-loans,sourced
+51,90,% deep-learning fruit detection accuracy reported by some models; field variability and sim-to-real gap remain (Tan et al. 2025 review),https://doi.org/10.3390/s25123677,sourced
+52,5000,USD low end of open-source over-the-row field robot build cost ($5–6k; 24V LiFePO4; 24–42x weed reduction vs manual; Truong et al. 2025),https://arxiv.org/abs/2509.25056,sourced
+53,0.5,fraction harvest cost drop after mechanical tomato harvester + uniformly-ripening varieties (UC Davis; manual to mostly mechanical 1963-68),https://bae.ucdavis.edu/news/tomato-industry-saviors,sourced
+54,0,soft grippers: lower cost and simpler control than hard end-effectors but few soft actuators made for picking (Navas et al. 2021; qualitative),https://doi.org/10.3390/s21082689,sourced
+55,0,strawberry harvesting robot designed integrated and field-evaluated end to end (Xiong et al. 2020; title only cited),https://doi.org/10.1002/rob.21889,sourced
+56,33.7,% single-junction solar cell efficiency limit at 1.34 eV gap (Shockley & Queisser 1961; used in the Bench),https://doi.org/10.1063/1.1736034,sourced
