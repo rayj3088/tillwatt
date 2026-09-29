@@ -55,3 +55,4 @@ number,value,unit,source_url,badge
 54,0,soft grippers: lower cost and simpler control than hard end-effectors but few soft actuators made for picking (Navas et al. 2021; qualitative),https://doi.org/10.3390/s21082689,sourced
 55,0,strawberry harvesting robot designed integrated and field-evaluated end to end (Xiong et al. 2020; title only cited),https://doi.org/10.1002/rob.21889,sourced
 56,33.7,% single-junction solar cell efficiency limit at 1.34 eV gap (Shockley & Queisser 1961; used in the Bench),https://doi.org/10.1063/1.1736034,sourced
+57,10.18,kg CO2 per gallon of diesel burned (EPA greenhouse gas equivalencies calculator; used for diesel not burned),https://www.epa.gov/energy/greenhouse-gas-equivalencies-calculator-calculations-and-references,sourced

@@ -488,6 +488,23 @@
   .rs-stats span { font-size: 10px; color: var(--sub); font-weight: 600; text-transform: uppercase; letter-spacing: .03em; }
   .rs-stats b { font: 700 18px/1.25 "Space Grotesk", sans-serif; font-variant-numeric: tabular-nums; }
   .rs-stats i { font-style: normal; font-size: 10.5px; color: var(--sub); line-height: 1.3; }
+  .rs-subs { margin: 0 0 12px; flex-wrap: nowrap; gap: 4px; overflow-x: auto; }
+  .rs-subs .build-tab { flex: 1 1 auto; padding: 8px 6px; white-space: nowrap; text-align: center; }
+  .rs-table td { white-space: nowrap; } .rs-table td:first-child { white-space: normal; }
+  .rs-h { font: 700 13px/1.3 "Space Grotesk", sans-serif; margin: 0 0 6px; }
+  .rs-card { border: 1px solid var(--line); border-radius: 11px; padding: 10px 12px; margin: 10px 0; background: var(--panel); }
+  .rs-card h4 { margin: 0 0 6px; font: 700 13.5px/1.3 "Space Grotesk", sans-serif; }
+  .rs-card p { font-size: 13px; line-height: 1.5; margin: 0 0 6px; } .rs-card ul { margin: 4px 0 0; padding-left: 18px; font-size: 13px; line-height: 1.5; } .rs-card li { margin-bottom: 5px; }
+  .rs-card a { color: var(--accent); }
+  .rs-stats4 { grid-template-columns: repeat(2, 1fr); }
+  .rs-pos { color: var(--served); font-weight: 600; } .rs-neg { color: var(--unmet); font-weight: 600; }
+  .rs-now td { font-weight: 700; background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  .rs-x { color: var(--sub); text-decoration: none; margin-left: 4px; }
+  .rs-check { list-style: none; padding-left: 0 !important; } .rs-check li { display: flex; gap: 8px; align-items: baseline; }
+  .rs-tag { flex: none; min-width: 52px; text-align: center; font: 700 10px/1 ui-monospace, Menlo, monospace; padding: 3px 5px; border-radius: 5px; text-transform: uppercase; letter-spacing: .04em; }
+  .rs-tag-built { background: color-mix(in srgb, var(--served) 25%, transparent); color: var(--ink); } .rs-tag-part { background: color-mix(in srgb, var(--solar) 28%, transparent); color: var(--ink); } .rs-tag-todo { background: color-mix(in srgb, var(--unmet) 25%, transparent); color: var(--ink); }
+  .rh-row { display: flex; align-items: center; gap: 8px; font-size: 12px; margin: 4px 0; } .rh-row span { width: 84px; color: var(--sub); } .rh-row b { width: 36px; text-align: right; font-variant-numeric: tabular-nums; }
+  .rh-bar { flex: 1; height: 10px; border-radius: 5px; background: color-mix(in srgb, var(--line) 55%, transparent); overflow: hidden; } .rh-bar i { display: block; height: 100%; background: var(--served); } .rh-bar i.bad { background: var(--unmet); }
   .rs-figure { margin: 16px 0 0; max-width: 560px; }
   .tw-legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--sub); margin-bottom: 6px; }
   .tw-k { display: inline-block; width: 3px; height: 12px; vertical-align: -2px; margin-right: 5px; }
@@ -3364,7 +3381,7 @@ const RS_SRC = {
   pnnlbatt: ["PNNL 2022 storage cost report", "https://www.pnnl.gov/sites/default/files/media/file/ESGC%20Cost%20Performance%20Report%202022%20PNNL-33283.pdf"],
   fd: ["Future Farming (FarmDroid FD20)", "https://www.futurefarming.com/farmdroid-fd20-automatic-seeding-and-weeding/"],
 };
-const RESEARCH = { seed: 1, sig: null, res: null, timer: null, log: [], n: 0 };
+const RESEARCH = { seed: 1, sig: null, res: null, timer: null, log: [], n: 0, sub: "verdict", pins: [], pinN: 0 };
 
 function rsSet(obj, k, v) { const old = obj[k]; obj[k] = v; return () => { obj[k] = old; }; }
 function rsMul(list, k, m) { const olds = list.map(o => o[k]); list.forEach(o => { o[k] = o[k] * m; }); return () => list.forEach((o, i) => { o[k] = olds[i]; }); }
@@ -3488,12 +3505,54 @@ function rsRun(ts, wseed) {
   try {
     const vals = RS_PARAMS.map((P, k) => { const t = ts[k] || 0; if (!t || P.inv) return 0; const [lo, b, hi] = rsRange(P); return rsAt(lo, b, hi, t); });
     RS_PARAMS.forEach((P, k) => { const t = ts[k] || 0; if (t) undos.push(P.inv ? rsInvSet(P.inv, t) : P.set(vals[k])); });
-    const rows = simulateScene(currentKey, farmLoadProfile(), wseed);
-    const dark = rows.filter(r => r.unmet > 1e-6).length;
-    const e = farmEconomics(rows, solarAggregate(), batteryAggregate(), null, dark);
-    return { pay: e.paybackYears, dark, win: isWinningBuild(e.paybackYears, dark), capex: e.capexTotal, net: e.netAnnualValue, e };
+    return rsEval(wseed);
   } finally { for (let i = undos.length - 1; i >= 0; i--) undos[i](); }
 }
+function rsEval(wseed) {
+  const rows = simulateScene(currentKey, farmLoadProfile(), wseed);
+  const dark = rows.filter(r => r.unmet > 1e-6).length;
+  const unmet = rows.reduce((a, r) => a + Math.max(0, r.unmet), 0);
+  const e = farmEconomics(rows, solarAggregate(), batteryAggregate(), null, dark);
+  return { pay: e.paybackYears, dark, unmet, win: isWinningBuild(e.paybackYears, dark), capex: e.capexTotal, net: e.netAnnualValue, e };
+}
+// What would have to be true? Move one number alone until break-even hits the target, if any value within 3x its range does.
+function rsSolve(P, wseed) {
+  if (P.inv || !(P.mult || P.base)) return null;
+  const b = P.mult ? 1 : P.base(), [lo, , hi] = rsRange(P), span = Math.max(hi - lo, 0.25 * Math.abs(b) || 0.1);
+  const f = v => { const u = P.set(v); try { const r = rsEval(wseed); return rsCap(r.pay) - WIN_PAYBACK_YEARS; } finally { u(); } };
+  const cands = [Math.max(b * 0.02, b - 3 * span), b + 3 * span];
+  let best = null;
+  for (const far of cands) {
+    if (P.key === "season" || P.key === "windcf" || P.key === "hydrocf" || P.key === "ovh") { if (far > 1) continue; }
+    const f0 = f(b), f1 = f(far);
+    if (f0 <= 0) return { already: true };
+    if (f1 > 0) continue;
+    let a = b, c = far;
+    for (let i = 0; i < 26; i++) { const m = (a + c) / 2; if (f(m) > 0) a = m; else c = m; }
+    const v = c;
+    if (best === null || Math.abs(v - b) < Math.abs(best - b)) best = v;
+  }
+  if (best === null) return { none: true };
+  return { v: best, inRange: best >= Math.min(lo, hi) - 1e-9 && best <= Math.max(lo, hi) + 1e-9 };
+}
+// Year-by-year money: cash, and borrowed at the farm-loan rate for the whole cost.
+function rsCash(e) {
+  const solarValue = e.grossAnnualValue * e.solarShare, cf = [], yrs = FIN.years;
+  for (let t = 1; t <= yrs; t++) cf.push(e.netAnnualValue - solarValue * (1 - Math.pow(1 - FIN.pv_degradation, t)));
+  const npvAt = r => cf.reduce((a, c, i) => a + c / Math.pow(1 + r, i + 1), -e.capexTotal);
+  let irr = null;
+  if (npvAt(0) > 0 || cf.some(c => c > 0)) {
+    if (npvAt(-0.5) > 0 && npvAt(1) < 0) { let a = -0.5, c = 1; for (let i = 0; i < 60; i++) { const m = (a + c) / 2; if (npvAt(m) > 0) a = m; else c = m; } irr = (a + c) / 2; }
+  }
+  let cum = -e.capexTotal, dpb = null, run = -e.capexTotal;
+  cf.forEach((c, i) => { cum += c; run += c / Math.pow(1 + FIN.rate, i + 1); if (dpb === null && run >= 0) dpb = i + 1; });
+  const crf = FIN.rate / (1 - Math.pow(1 + FIN.rate, -yrs)), pmt = e.capexTotal * crf;
+  const cum1 = []; let c1 = -e.capexTotal, c2 = 0;
+  cf.forEach((c, i) => { c1 += c; c2 += c - pmt; cum1.push([c1, c2]); });
+  return { cf, irr, dpb, pmt, coverage: pmt > 0 ? cf[0] / pmt : Infinity, cum: cum1, worst: c2 };
+}
+const RS_KG_CO2_PER_GAL = 10.18, RS_KWH_PER_GAL = 9;
+
 function rsWeatherSeed(seed, i) { return 20000 + seed * 1000 + i; }
 function rsSig() {
   return JSON.stringify([currentKey, [...selected], CONFIG, GEN, FARM.jobs, FARM.sunSync, sandboxItems.map(i => [i.type, i.tier, i.job]),
@@ -3505,7 +3564,7 @@ function rsCompute() {
   const board = rsRun(zeros, SEED);
   // the scoreboard shows one weather draw; research centers on the typical one (median of many draws)
   const wl = [];
-  for (let i = 0; i < RS_WEATHER_N; i++) { const ws = rsWeatherSeed(seed, i), x = rsRun(zeros, ws); wl.push({ ws, pay: x.pay, net: x.net }); }
+  for (let i = 0; i < RS_WEATHER_N; i++) { const ws = rsWeatherSeed(seed, i), x = rsRun(zeros, ws); wl.push({ ws, pay: x.pay, net: x.net, dark: x.dark, unmet: x.unmet }); }
   const byPay = wl.slice().sort((a, b) => rsCap(a.pay) - rsCap(b.pay) || a.ws - b.ws);
   const typSeed = byPay[Math.floor((byPay.length - 1) / 2)].ws;
   const base = rsRun(zeros, typSeed);
@@ -3531,9 +3590,12 @@ function rsCompute() {
   const mode = isFinite(base.pay) ? "pay" : "net";
   bars.forEach(b => { b.swing = mode === "pay" ? Math.abs(Math.min(rsCap(b.hi), 60) - Math.min(rsCap(b.lo), 60)) : Math.abs(b.nhi - b.nlo) / 1000; });
   const tor = bars.filter(b => b.swing > (mode === "pay" ? 0.02 : 0.05)).sort((a, b) => b.swing - a.swing);
+  const wd = wl.map(x => x.dark).sort((a, b) => a - b), wu = wl.map(x => x.unmet).sort((a, b) => a - b);
+  const rel = { p50: rsPctl(wd, 0.5), p90: rsPctl(wd, 0.9), worst: wd[wd.length - 1], lit: wd.filter(d => d < WIN_MAX_DARK_HOURS).length / wd.length, unmetWorst: wu[wu.length - 1], unmetP50: rsPctl(wu, 0.5), hist: wd, n: wd.length };
+  const fixes = tor.filter(b => b.P !== RS_WEATHER && !b.P.inv).slice(0, 4).map(b => ({ P: b.P, label: b.label, res: rsSolve(b.P, typSeed) }));
   const wins = trials.filter(t => t.win).length, n = trials.length;
   const pays = trials.map(t => t.pay).sort((a, b) => rsCap(a) - rsCap(b));
-  return { seed, base, board, trials, tor, mode, wins, n, ci: rsWilson(wins, n), lit: trials.filter(t => t.dark < WIN_MAX_DARK_HOURS).length,
+  return { seed, base, board, rel, fixes, cash: rsCash(base.e), trials, tor, mode, wins, n, ci: rsWilson(wins, n), lit: trials.filter(t => t.dark < WIN_MAX_DARK_HOURS).length,
     p10: rsPctl(pays, 0.1), p50: rsPctl(pays, 0.5), p90: rsPctl(pays, 0.9), ms: Date.now() - t0 };
 }
 function rsEnsure() {
@@ -3554,7 +3616,7 @@ function rsUpdate() {
   rsRenderChip();
   if (activeBuildTab === "Research") renderResearch();
 }
-function rsReset() { RESEARCH.log = []; RESEARCH.n = 0; RESEARCH.sig = null; RESEARCH.res = null; }
+function rsReset() { RESEARCH.pins = []; RESEARCH.log = []; RESEARCH.n = 0; RESEARCH.sig = null; RESEARCH.res = null; }
 
 // ---------- lab notebook: every change is an experiment ----------
 function rsLog(action, now, won, first) {
@@ -3765,38 +3827,133 @@ function rsNotebookHtml() {
   return `<div class="rs-scroll rs-tall"><table class="rs-table"><tr><th>#</th><th>Change</th><th>Break-even</th><th>Win chance</th><th>Effect</th></tr>${rows}</table></div>
     <p class="rs-note">"Real" means the change moved enough of the same ${RS_TRIALS} worlds that chance alone would do it less than 1 time in 20. "Noise" means it didn't clear that bar.</p>`;
 }
-function renderResearch() {
-  const el = document.getElementById("researchPanel");
-  if (!el || !currentKey) return;
-  const r = rsEnsure();
-  rsRenderChip();
-  if (!r) return;
-  const scene = rsScene(), [cls, verdict] = rsVerdict(r), e = r.base.e;
-  el.innerHTML = `<div class="rs-meta">Research report · ${escapeHtml(scene.label)} · seed ${r.seed} · ${r.n} trials</div>
-    <p class="rs-intro">One test run can be lucky. Engineers run a model hundreds of times with every uncertain number wiggled inside its range, then ask two questions: <b>how sure are we</b>, and <b>which number matters most?</b></p>
-    <div class="rs-hyp"><span>Hypothesis</span>This farm pays for itself within ${WIN_PAYBACK_YEARS} years and stays lit.</div>
+const RS_SUBS = [["verdict", "Verdict"], ["money", "Money"], ["weather", "Reliability"], ["compare", "Compare"], ["about", "About"]];
+function rsSub(k) { RESEARCH.sub = k; renderResearch(); }
+function rsPin() {
+  const r = rsEnsure(); if (!r) return;
+  const e = r.base.e, L = RESEARCH.log[RESEARCH.log.length - 1];
+  RESEARCH.pins.push({ id: ++RESEARCH.pinN, label: (L && L.what) || rsScene().label, p: r.wins / r.n, pay: r.base.pay, capex: e.capexTotal, dark: r.base.dark, npv: e.npv20 });
+  if (RESEARCH.pins.length > 4) RESEARCH.pins.shift();
+  renderResearch();
+}
+function rsUnpin(id) { RESEARCH.pins = RESEARCH.pins.filter(x => x.id !== id); renderResearch(); }
+const RS_CHECK = [
+  ["built", "Win chance with error bars, across 300 random worlds"],
+  ["built", "Ranked sensitivity, plus \"what would have to be true\""],
+  ["built", "Cash flow, IRR and a borrowed-money test"],
+  ["built", "Weather spread over 60 samples; diesel burned and avoided"],
+  ["built", "Side-by-side builds and a lab notebook that separates real changes from luck"],
+  ["part", "Weather is 10-day samples, not multi-year"],
+  ["part", "Financing has a loan payment, but no taxes or incentives"],
+  ["part", "Emissions count diesel avoided, not the carbon in making panels and batteries"],
+  ["todo", "Crop yields and sales"],
+  ["todo", "Check against a real farm or NREL's PVWatts"],
+  ["todo", "Panel loss factors: soiling, wiring, inverter"],
+  ["todo", "The grid as the old way, instead of diesel"],
+  ["todo", "Inputs that move together (fuel, wages, prices)"],
+];
+function rsAboutHtml() {
+  const word = { built: "Built", part: "Partly", todo: "Not yet" };
+  return `<div class="rs-card"><h4>Why this exists</h4>
+      <p>Tillwatt is for people who might invent the machines and power systems a <b>fully automated, 100% renewable farm</b> needs. This report asks three things: <b>does it pay for itself, how sure are we, and what would have to change?</b></p></div>
+    <div class="rs-card"><h4>What makes it different</h4>
+      <ul>
+        <li><b>Machines that don't exist yet.</b> Tools like <a href="https://sam.nlr.gov/financial-models.html" target="_blank" rel="noopener">NREL's SAM</a> and HOMER size equipment you can buy. Here you design new machines from sourced parts, and the less ready the idea, the wider its numbers.</li>
+        <li><b>A to-do list for inventors.</b> Every uncertain number has a range and a label (measured, estimate, invention). The report ranks which ones matter most.</li>
+        <li><b>Every change is an experiment.</b> Same random worlds before and after, so you can tell a real effect from luck.</li>
+        <li><b>Open and repeatable.</b> Runs in a browser. Same build and seed, same numbers, on anyone's device.</li>
+      </ul>
+      <p class="rs-note"><b>The honest gap:</b> SAM is checked against real systems. This isn't yet.</p></div>
+    <div class="rs-card"><h4>What a complete report has</h4>
+      <ul class="rs-check">${RS_CHECK.map(([k, t]) => `<li><span class="rs-tag rs-tag-${k}">${word[k]}</span>${t}</li>`).join("")}</ul></div>`;
+}
+function rsVerdictPage(r) {
+  const scene = rsScene(), [cls, verdict] = rsVerdict(r);
+  const fixes = r.fixes.filter(f => f.res);
+  const fixLine = f => {
+    const res = f.res, P = f.P;
+    if (res.already) return `<li><b>${escapeHtml(f.label)}</b> — already on target in typical weather.</li>`;
+    if (res.none) return `<li><b>${escapeHtml(f.label)}</b> — no value within three times its range gets it to ${WIN_PAYBACK_YEARS} years alone.</li>`;
+    const [lo, , hi] = rsRange(P), b = P.mult ? 1 : P.base();
+    const show = v => P.mult ? (v >= 1 ? "+" : "−") + Math.round(Math.abs(v - 1) * 100) + "%" : P.fmt(v);
+    return `<li><b>${escapeHtml(f.label)}</b> would need to be <b>${show(res.v)}</b> (now ${P.mult ? "your build" : P.fmt(b)}). ${res.inRange ? "That's inside the range people report." : "<b>That's outside anything measured.</b>"}</li>`;
+  };
+  return `<div class="rs-hyp"><span>Hypothesis</span>This farm pays for itself within ${WIN_PAYBACK_YEARS} years and stays lit.</div>
     <div class="rs-res rs-${cls}"><span>Result</span>${verdict}</div>
     <div class="rs-stats">
       <div><span>Win chance</span><b>${pct(r.wins / r.n)}</b><i>95%: ${pct(r.ci[0])}–${pct(r.ci[1])}</i></div>
       <div><span>Break-even</span><b>${rsYr(r.p50)}</b><i>${!isFinite(r.p10) ? "never in 9 of 10 worlds" : `most worlds: ${rsYr(r.p10)} to ${rsYr(r.p90)}`}</i></div>
       <div><span>Stays lit</span><b>${pct(r.lit / r.n)}</b><i>under ${WIN_MAX_DARK_HOURS} dark hours</i></div>
     </div>
-    <figure class="rs-figure">${rsFanSvg(r)}<figcaption><b>Fig. 1 — Money back over time.</b> Cash compared with the old way (hired hands and a diesel generator). Dark band: the middle half of the ${r.n} worlds. Light band: 8 in 10 of them. Line: the middle world. Where it crosses zero is break-even; the red dashed line is the ${WIN_PAYBACK_YEARS}-year target.</figcaption></figure>
-    <figure class="rs-figure">${rsTornadoSvg(r)}<figcaption><b>Fig. 2 — What moves ${r.mode === "net" ? "the money" : "break-even"} most.</b> Each bar swings one number from its low to its high end while everything else stays at its best guess (${r.mode === "net" ? "net dollars a year at each end. This farm never breaks even yet, so the chart shows what moves its yearly money; the red dashed line is zero" : "years at each end"}). Longest bar = matters most.
-      <span class="rs-key"><i style="background:${RS_COLOR.sourced}"></i>measured</span><span class="rs-key"><i style="background:${RS_COLOR.modeled}"></i>estimate</span><span class="rs-key"><i style="background:${RS_COLOR.research}"></i>invention estimate</span><span class="rs-key"><i style="background:${RS_COLOR.chance}"></i>weather luck</span></figcaption></figure>
     ${rsBoardNote(r)}
+    <figure class="rs-figure">${rsFanSvg(r)}<figcaption><b>Money back over time.</b> Cash compared with the old way (hired hands and a diesel generator). Dark band: the middle half of ${r.n} worlds. Light band: 8 in 10. Line: the middle world. Zero is break-even; the red dashed line is the ${WIN_PAYBACK_YEARS}-year target.</figcaption></figure>
+    <figure class="rs-figure"><h4 class="rs-h">What moves ${r.mode === "net" ? "the money" : "break-even"} most</h4>${rsTornadoSvg(r)}<figcaption>Each bar swings one number from its low to its high end, everything else at its best guess. Longest bar matters most.
+      <span class="rs-key"><i style="background:${RS_COLOR.sourced}"></i>measured</span><span class="rs-key"><i style="background:${RS_COLOR.modeled}"></i>estimate</span><span class="rs-key"><i style="background:${RS_COLOR.research}"></i>invention</span><span class="rs-key"><i style="background:${RS_COLOR.chance}"></i>weather</span></figcaption></figure>
     ${rsBigLever(r)}
-    <figure class="rs-figure">${rsWaterfallSvg(e)}<figcaption><b>Fig. 3 — Where a year's money comes from</b> (best guesses, typical weather). Build cost ${fmtMoney(e.capexTotal)} ÷ net ${e.netAnnualValue > 0 ? fmtMoney(e.netAnnualValue) + "/yr" : "nothing"} = <b>${rsYr(e.paybackYears)}</b>.</figcaption></figure>
-    <details class="rs-details" open><summary>Lab notebook — every change is an experiment</summary>${rsNotebookHtml()}</details>
+    ${fixes.length && !r.base.win ? `<div class="rs-card"><h4>What would have to be true</h4><p class="rs-note">To reach ${WIN_PAYBACK_YEARS} years, changing one number alone:</p><ul>${fixes.map(fixLine).join("")}</ul></div>` : ""}`;
+}
+function rsMoneyPage(r) {
+  const e = r.base.e, c = r.cash, at = [1, 5, 10, 15, 20];
+  const gal = (e.grossAnnualValue / COSTS.off_grid_displacement_per_kwh) / RS_KWH_PER_GAL, tons = gal * RS_KG_CO2_PER_GAL / 1000;
+  const money = v => (v < 0 ? "−" : "") + rsK(Math.abs(v));
+  const cover = c.coverage;
+  return `<div class="rs-stats rs-stats4">
+      <div><span>Cost to build</span><b>${rsK(e.capexTotal)}</b><i>installed</i></div>
+      <div><span>Net per year</span><b>${e.netAnnualValue > 0 ? rsK(e.netAnnualValue) : "none"}</b><i>after all costs</i></div>
+      <div><span>Return (IRR)</span><b>${c.irr === null ? "none" : (c.irr * 100).toFixed(1) + "%"}</b><i>a year, over ${FIN.years} yr</i></div>
+      <div><span>Payback, with interest</span><b>${c.dpb ? c.dpb + " yr" : "over " + FIN.years}</b><i>at ${(FIN.rate * 100).toFixed(2)}%</i></div>
+    </div>
+    <figure class="rs-figure"><h4 class="rs-h">Where a year's money comes from</h4>${rsWaterfallSvg(e)}<figcaption>Best guesses, typical weather. Build cost ${fmtMoney(e.capexTotal)} ÷ net ${e.netAnnualValue > 0 ? fmtMoney(e.netAnnualValue) + "/yr" : "nothing"} = <b>${rsYr(e.paybackYears)}</b>.</figcaption></figure>
+    <div class="rs-card"><h4>Cash in the bank, year by year</h4>
+      <div class="rs-scroll"><table class="rs-table"><tr><th>Year</th>${at.map(y => `<th>${y}</th>`).join("")}</tr>
+        <tr><td>Paid in cash</td>${at.map(y => `<td class="${c.cum[y - 1][0] >= 0 ? "rs-pos" : "rs-neg"}">${money(c.cum[y - 1][0])}</td>`).join("")}</tr>
+        <tr><td>Borrowed</td>${at.map(y => `<td class="${c.cum[y - 1][1] >= 0 ? "rs-pos" : "rs-neg"}">${money(c.cum[y - 1][1])}</td>`).join("")}</tr></table></div>
+      <p class="rs-note">Total cash after each year, before any interest earned elsewhere. <b>Borrowed</b> means the whole build is financed for ${FIN.years} years at ${(FIN.rate * 100).toFixed(2)}% (${'<a href="https://www.fsa.usda.gov/news-events/news/12-12-2025/usda-announces-december-2025-lending-rates-agricultural-producers" target="_blank" rel="noopener">USDA farm ownership loan rate</a>'}): payment ${rsK(c.pmt)}/yr. The farm covers that payment <b>${isFinite(cover) ? cover.toFixed(2) + "×" : "—"}</b> ${cover < 1 ? "— <b>it can't pay its own loan.</b>" : "over."}</p></div>
+    <div class="rs-card"><h4>Diesel not burned</h4>
+      <p>About <b>${Math.round(gal).toLocaleString()} gallons</b> and <b>${tons.toFixed(1)} tonnes of CO₂</b> a year (${RS_KG_CO2_PER_GAL} kg per gallon, <a href="https://www.epa.gov/energy/greenhouse-gas-equivalencies-calculator-calculations-and-references" target="_blank" rel="noopener">EPA</a>; ${RS_KWH_PER_GAL} kWh per gallon). Making the panels, batteries and machines emits carbon too. That isn't counted yet.</p></div>`;
+}
+function rsWeatherPage(r) {
+  const rel = r.rel, bins = [["0", d => d === 0], ["1–4", d => d >= 1 && d <= 4], ["5–14", d => d >= 5 && d <= 14], ["15–29", d => d >= 15 && d <= 29], ["30+", d => d >= 30]];
+  const rows = bins.map(([lab, f], i) => { const n = rel.hist.filter(f).length, w = 100 * n / rel.n; return `<div class="rh-row"><span>${lab} dark h</span><div class="rh-bar"><i class="${i >= 3 ? "bad" : ""}" style="width:${w.toFixed(0)}%"></i></div><b>${Math.round(w)}%</b></div>`; }).join("");
+  return `<div class="rs-stats">
+      <div><span>Typical</span><b>${rel.p50} h</b><i>dark hours in 10 days</i></div>
+      <div><span>Bad luck (1 in 10)</span><b>${rel.p90} h</b><i>or worse</i></div>
+      <div><span>Worst of ${rel.n}</span><b>${rel.worst} h</b><i>${rel.unmetWorst.toFixed(0)} kWh unserved</i></div>
+    </div>
+    <div class="rs-card"><h4>How often it stays lit</h4><p>Under ${WIN_MAX_DARK_HOURS} dark hours in <b>${pct(rel.lit)}</b> of ${rel.n} weather samples.</p><div class="rh">${rows}</div>
+      <p class="rs-note">A dark hour is any hour the farm can't run everything. What fixes it: more storage, a second source (wind or river), or shifting machine work into daylight.</p></div>
+    <div class="rs-card"><h4>The limit</h4><p>Each sample is 10 days, scaled by a winter factor. Real storage is sized by the worst cloudy week in many years, and this can't see that yet. It's listed under <a href="#" onclick="rsSub('about');return false;">what's not built</a>.</p></div>`;
+}
+function rsComparePage(r) {
+  const e = r.base.e, cur = { label: "Now", p: r.wins / r.n, pay: r.base.pay, capex: e.capexTotal, dark: r.base.dark, npv: e.npv20, now: true };
+  const rows = RESEARCH.pins.concat([cur]).map(x => `<tr class="${x.now ? "rs-now" : ""}"><td>${escapeHtml(x.label)}${x.now ? "" : ` <a href="#" class="rs-x" onclick="rsUnpin(${x.id});return false;" aria-label="Remove">✕</a>`}</td><td>${pct(x.p)}</td><td>${rsYr(x.pay)}</td><td>${rsK(x.capex)}</td><td>${x.dark} h</td><td>${(x.npv >= 0 ? "+" : "−") + rsK(Math.abs(x.npv))}</td></tr>`).join("");
+  return `<div class="rs-card"><h4>Side by side</h4>
+      <p>Pin a build, change the farm, and see the difference. Up to 4 pins.</p>
+      <div class="sandbox-toolbar"><button type="button" class="toolbar-btn primary" onclick="rsPin()">📌 Pin this build</button></div>
+      <div class="rs-scroll"><table class="rs-table"><tr><th>Build</th><th>Win</th><th>Break-even</th><th>Cost</th><th>Dark</th><th>20-yr</th></tr>${rows}</table></div>
+      <p class="rs-note">Win = chance across ${r.n} worlds. Break-even is the best guess in typical weather. 20-yr = value versus the old way.</p></div>
+    <div class="rs-card"><h4>Lab notebook</h4>${rsNotebookHtml()}</div>`;
+}
+function renderResearch() {
+  const el = document.getElementById("researchPanel");
+  if (!el || !currentKey) return;
+  const r = rsEnsure();
+  rsRenderChip();
+  if (!r) return;
+  const scene = rsScene(), sub = RS_SUBS.some(x => x[0] === RESEARCH.sub) ? RESEARCH.sub : "verdict";
+  const page = { verdict: rsVerdictPage, money: rsMoneyPage, weather: rsWeatherPage, compare: rsComparePage }[sub];
+  const tabs = `<div class="build-tabs rs-subs" role="tablist">${RS_SUBS.map(([k, t]) => `<button type="button" role="tab" class="build-tab${k === sub ? " active" : ""}" aria-selected="${k === sub}" onclick="rsSub('${k}')">${t}</button>`).join("")}</div>`;
+  const body = sub === "about" ? rsAboutHtml() + `
     <details class="rs-details"><summary>Methods — the math behind every number</summary>${rsMethodsHtml()}</details>
     <details class="rs-details"><summary>Every uncertain number, and where it comes from</summary>${rsParamsHtml()}</details>
-    <details class="rs-details"><summary>What an expert would challenge</summary><ul class="rs-limits">${RS_LIMITS.map(x => `<li>${x}</li>`).join("")}</ul></details>
+    <details class="rs-details"><summary>What an expert would challenge</summary><ul class="rs-limits">${RS_LIMITS.map(x => `<li>${x}</li>`).join("")}</ul></details>` : page(r);
+  el.innerHTML = `<div class="rs-meta">Research · ${escapeHtml(scene.label)} · seed ${r.seed} · ${r.n} worlds</div>${tabs}${body}
     <div class="sandbox-toolbar" style="margin-top:12px;">
-      <button type="button" class="toolbar-btn" onclick="rsReseed()">Replicate: new random worlds</button>
-      <button type="button" class="toolbar-btn" onclick="rsDownloadCsv()">Download data (CSV)</button>
-      <button type="button" class="toolbar-btn primary" onclick="printFarmSpec()">Print lab report</button>
+      <button type="button" class="toolbar-btn" onclick="rsReseed()">↻ New random worlds</button>
+      <button type="button" class="toolbar-btn" onclick="rsDownloadCsv()">⬇ Data (CSV)</button>
+      <button type="button" class="toolbar-btn primary" onclick="printFarmSpec()">🖨 Lab report</button>
     </div>
-    <p class="rs-note">Same build + same seed = same numbers, on any device. Replicating with a new seed shows how much the answer moves from sampling alone. Ran in ${r.ms} ms.</p>`;
+    <p class="rs-note">Same build + same seed = same numbers, on any device. Ran in ${r.ms} ms.</p>`;
 }
 function rsDownloadCsv() {
   const r = rsEnsure();
