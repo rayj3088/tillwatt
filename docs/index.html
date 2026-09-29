@@ -488,11 +488,26 @@
   .rs-stats span { font-size: 10px; color: var(--sub); font-weight: 600; text-transform: uppercase; letter-spacing: .03em; }
   .rs-stats b { font: 700 18px/1.25 "Space Grotesk", sans-serif; font-variant-numeric: tabular-nums; }
   .rs-stats i { font-style: normal; font-size: 10.5px; color: var(--sub); line-height: 1.3; }
-  .rs-figure { margin: 16px 0 0; }
-  .rs-fig { width: 100%; height: auto; display: block; }
+  .rs-figure { margin: 16px 0 0; max-width: 560px; }
+  .tw-legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--sub); margin-bottom: 6px; }
+  .tw-k { display: inline-block; width: 3px; height: 12px; vertical-align: -2px; margin-right: 5px; }
+  .tw-kb { background: var(--ink); } .tw-kg { background: repeating-linear-gradient(var(--unmet) 0 3px, transparent 3px 5px); }
+  .tw-row { padding: 7px 0; border-bottom: 1px solid var(--line); }
+  .tw-head { display: flex; align-items: baseline; gap: 6px; font-size: 13px; line-height: 1.3; }
+  .tw-head b { flex: 1; min-width: 0; font-weight: 600; }
+  .tw-dot { width: 9px; height: 9px; border-radius: 3px; flex: none; align-self: center; }
+  .tw-vals { font: 600 12px ui-monospace, Menlo, monospace; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .tw-range { font-size: 11.5px; color: var(--sub); margin: 1px 0 4px 15px; }
+  .tw-track { position: relative; height: 12px; margin-left: 15px; background: color-mix(in srgb, var(--line) 55%, transparent); border-radius: 6px; }
+  .tw-bar { position: absolute; top: 2px; height: 8px; border-radius: 4px; opacity: .9; }
+  .tw-clip { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+  .tw-mark { position: absolute; top: -2px; bottom: -2px; width: 0; z-index: 2; }
+  .tw-base { border-left: 2px solid var(--ink); } .tw-goal { border-left: 2px dashed var(--unmet); }
+  .tw-axis { display: flex; justify-content: space-between; margin: 3px 0 0 15px; font: 10.5px ui-monospace, Menlo, monospace; color: var(--sub); }
+  .rs-fig { width: 100%; max-width: 440px; height: auto; display: block; }
   .rs-fig .rs-grid { stroke: var(--line); stroke-width: 1; }
-  .rs-fig .rs-ax { fill: var(--sub); font: 9px ui-monospace, Menlo, monospace; }
-  .rs-fig .rs-lab { fill: var(--ink); font: 600 10px Inter, sans-serif; }
+  .rs-fig .rs-ax { fill: var(--sub); font: 10px ui-monospace, Menlo, monospace; }
+  .rs-fig .rs-lab { fill: var(--ink); font: 600 11px Inter, sans-serif; }
   .rs-fig .rs-bold { font-weight: 800; }
   .rs-figure figcaption { font-size: 11.5px; color: var(--sub); line-height: 1.45; margin-top: 4px; }
   .rs-key { display: inline-flex; align-items: center; gap: 4px; margin-right: 8px; white-space: nowrap; }
@@ -3487,7 +3502,13 @@ function rsSig() {
 function rsCompute() {
   if (!currentKey) return null;
   const t0 = Date.now(), seed = RESEARCH.seed, zeros = RS_PARAMS.map(() => 0);
-  const base = rsRun(zeros, SEED);
+  const board = rsRun(zeros, SEED);
+  // the scoreboard shows one weather draw; research centers on the typical one (median of many draws)
+  const wl = [];
+  for (let i = 0; i < RS_WEATHER_N; i++) { const ws = rsWeatherSeed(seed, i), x = rsRun(zeros, ws); wl.push({ ws, pay: x.pay, net: x.net }); }
+  const byPay = wl.slice().sort((a, b) => rsCap(a.pay) - rsCap(b.pay) || a.ws - b.ws);
+  const typSeed = byPay[Math.floor((byPay.length - 1) / 2)].ws;
+  const base = rsRun(zeros, typSeed);
   const trials = [];
   for (let i = 0; i < RS_TRIALS; i++) {
     const rng = makeRng((seed * 2654435761 + i * 40503 + 17) >>> 0);
@@ -3500,11 +3521,10 @@ function rsCompute() {
   RS_PARAMS.forEach((P, k) => {
     if (P.applies && !P.applies()) return;
     const tl = zeros.slice(), th = zeros.slice(); tl[k] = -1; th[k] = 1;
-    const lo = rsRun(tl, SEED), hi = rsRun(th, SEED);
+    const lo = rsRun(tl, typSeed), hi = rsRun(th, typSeed);
     bars.push({ P, label: P.label, status: P.status, range: rsRangeText(P), lo: lo.pay, hi: hi.pay, nlo: lo.net, nhi: hi.net });
   });
-  const w = [], wn = [];
-  for (let i = 0; i < RS_WEATHER_N; i++) { const x = rsRun(zeros, rsWeatherSeed(seed, i)); w.push(x.pay); wn.push(x.net); }
+  const w = wl.map(x => x.pay), wn = wl.map(x => x.net);
   w.sort((a, b) => rsCap(a) - rsCap(b)); wn.sort((a, b) => a - b);
   bars.push({ P: RS_WEATHER, label: RS_WEATHER.label, status: "chance", range: "lucky 10% ↔ unlucky 10%", lo: rsPctl(w, 0.1), hi: rsPctl(w, 0.9), nlo: rsPctl(wn, 0.9), nhi: rsPctl(wn, 0.1) });
   // a farm that never breaks even has no payback to swing, so rank by yearly net instead
@@ -3513,7 +3533,7 @@ function rsCompute() {
   const tor = bars.filter(b => b.swing > (mode === "pay" ? 0.02 : 0.05)).sort((a, b) => b.swing - a.swing);
   const wins = trials.filter(t => t.win).length, n = trials.length;
   const pays = trials.map(t => t.pay).sort((a, b) => rsCap(a) - rsCap(b));
-  return { seed, base, trials, tor, mode, wins, n, ci: rsWilson(wins, n), lit: trials.filter(t => t.dark < WIN_MAX_DARK_HOURS).length,
+  return { seed, base, board, trials, tor, mode, wins, n, ci: rsWilson(wins, n), lit: trials.filter(t => t.dark < WIN_MAX_DARK_HOURS).length,
     p10: rsPctl(pays, 0.1), p50: rsPctl(pays, 0.5), p90: rsPctl(pays, 0.9), ms: Date.now() - t0 };
 }
 function rsEnsure() {
@@ -3616,46 +3636,33 @@ function rsFanSvg(r) {
 }
 
 function rsTornadoSvg(r) {
-  if (r.mode === "net") return rsTornadoNetSvg(r);
-  const top = r.tor.slice(0, 8), base = r.base.pay;
-  if (!top.length) return `<p class="hint">Nothing in this build is uncertain enough to move break-even.</p>`;
-  const W = 360, pl = 6, pr = 40, rowH = 36, top0 = 22, H = top0 + top.length * rowH + 4;
-  const fin = [base, WIN_PAYBACK_YEARS].concat(...top.map(b => [b.lo, b.hi])).filter(isFinite);
-  let xmin = Math.max(0, Math.min(...fin) * 0.9), xmax = Math.max(...fin) * 1.06;
-  if (xmax - xmin < 1) xmax = xmin + 1;
-  const X = v => pl + (Math.min(rsCap(v), xmax) - xmin) / (xmax - xmin) * (W - pl - pr);
-  let out = "";
-  if (isFinite(base)) out += `<line x1="${X(base).toFixed(1)}" x2="${X(base).toFixed(1)}" y1="12" y2="${H}" style="stroke:var(--ink)" stroke-width="1"/><text x="${X(base).toFixed(1)}" y="9" text-anchor="middle" class="rs-ax">your farm ${rsYr(base)}</text>`;
-  out += `<line x1="${X(WIN_PAYBACK_YEARS).toFixed(1)}" x2="${X(WIN_PAYBACK_YEARS).toFixed(1)}" y1="14" y2="${H}" style="stroke:var(--unmet)" stroke-dasharray="4,3"/>`;
-  top.forEach((b, k) => {
-    const y = top0 + k * rowH, a = Math.min(rsCap(b.lo), rsCap(b.hi)), z = Math.max(rsCap(b.lo), rsCap(b.hi));
-    const xa = X(a), xz = X(z);
-    out += `<text x="${pl}" y="${y + 9}" class="rs-lab">${escapeHtml(b.label)} <tspan class="rs-ax">${escapeHtml(b.range)}</tspan></text>
-      <rect x="${xa.toFixed(1)}" y="${y + 14}" width="${Math.max(2, xz - xa).toFixed(1)}" height="11" rx="2" style="fill:${RS_COLOR[b.status]}"/>
-      <text x="${(xz + 3).toFixed(1)}" y="${y + 23}" class="rs-ax">${z >= 1e9 || z > xmax ? "never" : z.toFixed(1)}</text>` +
-      (xa - pl > 22 ? `<text x="${(xa - 3).toFixed(1)}" y="${y + 23}" text-anchor="end" class="rs-ax">${a.toFixed(1)}</text>` : "");
-  });
-  return `<svg viewBox="0 0 ${W} ${H}" class="rs-fig" role="img" aria-label="Which uncertain numbers move break-even the most">${out}</svg>`;
-}
-
-function rsTornadoNetSvg(r) {
-  const top = r.tor.slice(0, 8), base = r.base.net;
-  if (!top.length) return `<p class="hint">Nothing in this build is uncertain enough to move its yearly money.</p>`;
-  const W = 360, pl = 6, pr = 40, rowH = 36, top0 = 22, H = top0 + top.length * rowH + 4;
-  const all = [base, 0].concat(...top.map(b => [b.nlo, b.nhi]));
-  let xmin = Math.min(...all), xmax = Math.max(...all); const pad = (xmax - xmin) * 0.05 || 1; xmin -= pad; xmax += pad;
-  const X = v => pl + (v - xmin) / (xmax - xmin) * (W - pl - pr);
-  let out = `<line x1="${X(0).toFixed(1)}" x2="${X(0).toFixed(1)}" y1="14" y2="${H}" style="stroke:var(--unmet)" stroke-dasharray="4,3"/>
-    <line x1="${X(base).toFixed(1)}" x2="${X(base).toFixed(1)}" y1="12" y2="${H}" style="stroke:var(--ink)" stroke-width="1"/>
-    <text x="${X(base).toFixed(1)}" y="9" text-anchor="middle" class="rs-ax">your farm ${rsK(base)}/yr</text>`;
-  top.forEach((b, k) => {
-    const y = top0 + k * rowH, a = Math.min(b.nlo, b.nhi), z = Math.max(b.nlo, b.nhi), xa = X(a), xz = X(z);
-    out += `<text x="${pl}" y="${y + 9}" class="rs-lab">${escapeHtml(b.label)} <tspan class="rs-ax">${escapeHtml(b.range)}</tspan></text>
-      <rect x="${xa.toFixed(1)}" y="${y + 14}" width="${Math.max(2, xz - xa).toFixed(1)}" height="11" rx="2" style="fill:${RS_COLOR[b.status]}"/>
-      <text x="${(xz + 3).toFixed(1)}" y="${y + 23}" class="rs-ax">${rsK(z)}</text>` +
-      (xa - pl > 30 ? `<text x="${(xa - 3).toFixed(1)}" y="${y + 23}" text-anchor="end" class="rs-ax">${rsK(a)}</text>` : "");
-  });
-  return `<svg viewBox="0 0 ${W} ${H}" class="rs-fig" role="img" aria-label="Which uncertain numbers move the yearly money the most">${out}</svg>`;
+  const net = r.mode === "net", top = r.tor.slice(0, 8);
+  if (!top.length) return `<p class="hint">Nothing in this build is uncertain enough to move ${net ? "its yearly money" : "break-even"}.</p>`;
+  const base = net ? r.base.net : r.base.pay;
+  const ends = b => net ? [Math.min(b.nlo, b.nhi), Math.max(b.nlo, b.nhi)] : [Math.min(rsCap(b.lo), rsCap(b.hi)), Math.max(rsCap(b.lo), rsCap(b.hi))];
+  let lo, hi, cap = null;
+  if (net) {
+    const all = [base, 0].concat(...top.map(b => ends(b)));
+    lo = Math.min(...all); hi = Math.max(...all); const pd = (hi - lo) * 0.04 || 1; lo -= pd; hi += pd;
+  } else {
+    const fin = [base, WIN_PAYBACK_YEARS].concat(...top.map(b => ends(b))).filter(v => isFinite(v) && v < 1e9);
+    cap = Math.max(30, Math.ceil((isFinite(base) ? base : 30) * 1.8 / 5) * 5);
+    lo = 0; hi = Math.min(cap, Math.max(...fin) * 1.05); if (hi < 10) hi = 10;
+  }
+  const pc = v => (100 * (Math.min(Math.max(v, lo), hi) - lo) / (hi - lo)).toFixed(1);
+  const fmt = v => net ? rsK(v) : (v >= 1e9 ? "never" : v > hi ? ">" + Math.round(hi) + " yr" : v.toFixed(1) + " yr");
+  const marker = net ? 0 : WIN_PAYBACK_YEARS;
+  const rows = top.map(b => {
+    const [a, z] = ends(b), l = +pc(a), w = Math.max(1.5, +pc(z) - l);
+    const clipped = !net && z > hi;
+    return `<div class="tw-row"><div class="tw-head"><span class="tw-dot" style="background:${RS_COLOR[b.status]}"></span><b>${escapeHtml(b.label)}</b><span class="tw-vals">${fmt(a)} – ${fmt(z)}</span></div>
+      <div class="tw-range">${escapeHtml(b.range)}</div>
+      <div class="tw-track"><i class="tw-mark tw-goal" style="left:${pc(marker)}%"></i>${isFinite(base) ? `<i class="tw-mark tw-base" style="left:${pc(base)}%"></i>` : ""}<span class="tw-bar${clipped ? " tw-clip" : ""}" style="left:${l}%;width:${w.toFixed(1)}%;background:${RS_COLOR[b.status]}"></span></div></div>`;
+  }).join("");
+  const axis = net ? `<span>${rsK(lo)}</span><span>${rsK(hi)}</span>` : `<span>0 yr</span><span>${Math.round(hi)}${hi >= cap ? "+" : ""} yr</span>`;
+  return `<div class="tw" role="img" aria-label="Which uncertain numbers move ${net ? "the yearly money" : "break-even"} the most">
+    <div class="tw-legend"><span><i class="tw-k tw-kb"></i>your farm ${net ? rsK(base) + "/yr" : rsYr(base)}</span><span><i class="tw-k tw-kg"></i>${net ? "zero" : WIN_PAYBACK_YEARS + "-yr target"}</span></div>
+    ${rows}<div class="tw-axis">${axis}</div></div>`;
 }
 function rsFlows(e) {
   const wage = LABOR.wage_per_hr, dt = e.downtimeLossPct;
@@ -3692,8 +3699,16 @@ function rsVerdict(r) {
   const p = r.wins / r.n, ci = `${pct(r.ci[0])}–${pct(r.ci[1])}`;
   if (p >= 0.9) return ["good", `<b>Robust.</b> It wins in ${pct(p)} of ${r.n} simulated worlds (95% range ${ci}). Hard to break.`];
   if (p >= 0.5) return ["ok", `<b>Likely.</b> It wins in ${pct(p)} of worlds (95% range ${ci}) — but still loses in ${pct(1 - p)}.`];
-  if (p >= 0.1) return ["warn", `<b>Possible, not reliable.</b> It wins in only ${pct(p)} of worlds (95% range ${ci}).` + (r.base.win ? " The scoreboard's single test run was a lucky draw." : "")];
-  return ["bad", `<b>Not supported.</b> It wins in ${pct(p)} of worlds (95% range ${ci}).` + (r.base.win ? " The scoreboard's win only happens in a lucky world." : "")];
+  if (p >= 0.1) return ["warn", `<b>Possible, not reliable.</b> It wins in only ${pct(p)} of worlds (95% range ${ci}).` + (r.board.win ? " The scoreboard's single test run was a lucky draw." : "")];
+  return ["bad", `<b>Not supported.</b> It wins in ${pct(p)} of worlds (95% range ${ci}).` + (r.board.win ? " The scoreboard's win only happens in a lucky world." : "")];
+}
+function rsYrCap(v) { return v >= 1e9 ? "never" : v > 60 ? "more than 60 yr" : v.toFixed(1) + " yr"; }
+function rsBoardNote(r) {
+  const b = r.board.pay, t = r.base.pay;
+  if (!isFinite(b) && !isFinite(t)) return "";
+  if (isFinite(b) && isFinite(t) && Math.abs(b - t) / Math.max(t, 1) < 0.08) return "";
+  const dir = rsCap(b) < rsCap(t) ? "sunnier" : "gloomier";
+  return `<div class="rs-lever"><b>Why the scoreboard says ${rsYr(b)}.</b> It uses one fixed 10-day weather draw, and that draw is ${dir} than typical. This report centers on the typical draw: ${rsYr(t)}.</div>`;
 }
 function rsBigLever(r) {
   const b = r.tor[0];
@@ -3704,7 +3719,7 @@ function rsBigLever(r) {
     research: "This is one of your inventions. Nobody has built it yet, so its numbers are wide estimates — a working prototype would pin them down.",
     chance: "Storm timing matters most. More storage, or a second power source like wind or hydro, makes bad weeks hurt less.",
   }[b.status];
-  const swing = r.mode === "net" ? `the yearly money from ${rsK(Math.min(b.nlo, b.nhi))} to ${rsK(Math.max(b.nlo, b.nhi))}` : `break-even from ${rsYr(Math.min(rsCap(b.lo), rsCap(b.hi)))} to ${rsYr(Math.max(b.lo, b.hi))}`;
+  const swing = r.mode === "net" ? `the yearly money from ${rsK(Math.min(b.nlo, b.nhi))} to ${rsK(Math.max(b.nlo, b.nhi))}` : `break-even from ${rsYrCap(Math.min(rsCap(b.lo), rsCap(b.hi)))} to ${rsYrCap(Math.max(rsCap(b.lo), rsCap(b.hi)))}`;
   return `<div class="rs-lever"><b>Biggest lever: ${escapeHtml(b.label)}.</b> On its own it swings ${swing}. ${why}</div>`;
 }
 function rsMethodsHtml() {
@@ -3735,7 +3750,7 @@ function rsParamsHtml() {
 }
 const RS_LIMITS = [
   "No crop yield or sales. \"Winning\" means beating diesel and hand labor, not turning a profit. Closing it needs sourced yields and prices for each crop.",
-  "One 10-day weather sample, scaled by a winter factor. Real battery sizing is set by the worst cloudy week in many years of hourly data.",
+  "Weather is a 10-day sample (60 different random ones here), scaled by a winter factor — not a full year. Real battery sizing is set by the worst cloudy week in many years of hourly data.",
   "Crop base power (2–4 kW per crop) is an estimate, and it swings the answer more than any other number. One metered real farm would settle it.",
   "Machine tending time and breakdowns are guesses. Little is published on how often field robots need a person.",
   "The old way is remote diesel. A farm on the grid pays far less per kWh, so payback there is much longer.",
@@ -3769,8 +3784,9 @@ function renderResearch() {
     <figure class="rs-figure">${rsFanSvg(r)}<figcaption><b>Fig. 1 — Money back over time.</b> Cash compared with the old way (hired hands and a diesel generator). Dark band: the middle half of the ${r.n} worlds. Light band: 8 in 10 of them. Line: the middle world. Where it crosses zero is break-even; the red dashed line is the ${WIN_PAYBACK_YEARS}-year target.</figcaption></figure>
     <figure class="rs-figure">${rsTornadoSvg(r)}<figcaption><b>Fig. 2 — What moves ${r.mode === "net" ? "the money" : "break-even"} most.</b> Each bar swings one number from its low to its high end while everything else stays at its best guess (${r.mode === "net" ? "net dollars a year at each end. This farm never breaks even yet, so the chart shows what moves its yearly money; the red dashed line is zero" : "years at each end"}). Longest bar = matters most.
       <span class="rs-key"><i style="background:${RS_COLOR.sourced}"></i>measured</span><span class="rs-key"><i style="background:${RS_COLOR.modeled}"></i>estimate</span><span class="rs-key"><i style="background:${RS_COLOR.research}"></i>invention estimate</span><span class="rs-key"><i style="background:${RS_COLOR.chance}"></i>weather luck</span></figcaption></figure>
+    ${rsBoardNote(r)}
     ${rsBigLever(r)}
-    <figure class="rs-figure">${rsWaterfallSvg(e)}<figcaption><b>Fig. 3 — Where a year's money comes from</b> (best-guess world). Build cost ${fmtMoney(e.capexTotal)} ÷ net ${e.netAnnualValue > 0 ? fmtMoney(e.netAnnualValue) + "/yr" : "nothing"} = <b>${rsYr(e.paybackYears)}</b>.</figcaption></figure>
+    <figure class="rs-figure">${rsWaterfallSvg(e)}<figcaption><b>Fig. 3 — Where a year's money comes from</b> (best guesses, typical weather). Build cost ${fmtMoney(e.capexTotal)} ÷ net ${e.netAnnualValue > 0 ? fmtMoney(e.netAnnualValue) + "/yr" : "nothing"} = <b>${rsYr(e.paybackYears)}</b>.</figcaption></figure>
     <details class="rs-details" open><summary>Lab notebook — every change is an experiment</summary>${rsNotebookHtml()}</details>
     <details class="rs-details"><summary>Methods — the math behind every number</summary>${rsMethodsHtml()}</details>
     <details class="rs-details"><summary>Every uncertain number, and where it comes from</summary>${rsParamsHtml()}</details>
