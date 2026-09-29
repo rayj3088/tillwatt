@@ -431,6 +431,27 @@
   .ledger-kpis b { font: 700 16px/1.3 "Space Grotesk", sans-serif; font-variant-numeric: tabular-nums; }
   .ledger-kpis i { font-style: normal; font-size: 10.5px; color: var(--sub); line-height: 1.3; }
   .ledger-more summary { cursor: pointer; font-size: 12px; font-weight: 600; }
+  .wb-dock { position: sticky; top: 0; z-index: 6; background: #efe8d6; margin: 0 -16px; padding: 8px 16px 8px; border-bottom: 2px solid #2f2f2f22; box-shadow: 0 6px 10px -8px rgba(0,0,0,.35); }
+  .wb-dock.hit { background: #e3f1e4; }
+  .wb-dock .lab-title { font-size: 24px; } .wb-dock .lab-title span { font-size: 19px; }
+  .wb-dock .lab-close { padding: 5px 12px; }
+  .wb-meters { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 6px; }
+  .wb-m-h { display: flex; justify-content: space-between; align-items: baseline; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: #56605a; }
+  .wb-m-h b { font: 700 15px "Space Grotesk", sans-serif; color: #1c2420; text-transform: none; letter-spacing: 0; }
+  .wb-bar { position: relative; height: 9px; border-radius: 5px; background: #d9cfb6; margin-top: 3px; }
+  .wb-bar i { display: block; height: 100%; border-radius: 5px; background: #7a4fd6; }
+  .wb-bar i.ok, .wb-bar i.trlhi { background: #3f8f6f; } .wb-bar i.bad, .wb-bar i.trllo { background: #d9633f; } .wb-bar i.trlmid { background: #e0a418; }
+  .wb-bar u { position: absolute; top: -3px; bottom: -3px; width: 0; border-left: 2px dashed #1c2420; text-decoration: none; }
+  .wb-goal { font-size: 12px; line-height: 1.4; margin-top: 6px; color: #1c2420; }
+  .wb-farm { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 6px; font-size: 12.5px; color: #1c2420; }
+  .wb-farm .lab-btn { padding: 7px 14px; white-space: nowrap; }
+  .wb-farm .up, .wb-chip .up { color: #1f7a4f; font-weight: 700; } .wb-farm .down, .wb-chip .dn { color: #b2432a; font-weight: 700; } .wb-chip .same { color: #6b6557; }
+  .wb-presets { display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: 6px; }
+  .wb-preset { text-align: left; border: 1.5px dashed #7a4fd6; border-radius: 10px; padding: 8px 10px; background: #fffdf7; color: #1c2420; cursor: pointer; font: inherit; }
+  .wb-preset i { font-style: normal; font-size: 18px; display: block; } .wb-preset b { font-size: 13px; display: block; } .wb-preset small { font-size: 11px; color: #56605a; }
+  .wb-preset.on { border-style: solid; background: #efe6ff; box-shadow: 0 0 0 2px rgba(122,79,214,.25); }
+  .wb-share { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0 4px; } .wb-share .lab-btn { flex: 1 1 150px; }
+  .wb-ev { margin-top: 12px; } .wb-ev summary { cursor: pointer; font-weight: 700; font-size: 13px; padding: 6px 0; } .wb-ev .wb-tiles { margin-top: 6px; }
   .wb-strip { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; margin: 10px 0; align-items: baseline; }
   .wb-strip span:last-child { flex-basis: 100%; color: #8a3316; }
   .wb-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
@@ -1598,8 +1619,8 @@ function optLabel(job, key) {
 }
 // A machine is its base plus the part picked in each slot. Its readiness is its weakest part.
 function wbPicks(job, kind) { const k = job + ":" + kind.key; return (FARM.picks[k] = FARM.picks[k] || {}); }
-function wbBuild(job, kind) {
-  const p = wbPicks(job, kind);
+function wbBuild(job, kind, over) {
+  const p = over ? Object.assign({}, wbPicks(job, kind), over) : wbPicks(job, kind);
   const parts = kind.slots.map(s => ({ slot: s, opt: s.opts.find(o => o.key === p[s.key]) || s.opts[0] }));
   let cover = kind.cover, cost = kind.cost, kw = kind.kw, trl = kind.trl, tend = 1;
   parts.forEach(({ opt }) => { cover *= opt.m == null ? 1 : opt.m; cost += opt.cost || 0; kw += opt.kw || 0; trl = Math.min(trl, opt.trl); tend *= opt.t || 1; });
@@ -1773,17 +1794,70 @@ function closeLab() {
 }
 document.addEventListener("keydown", e => { const el = document.getElementById("lab"); if (e.key === "Escape" && el && !el.hidden) closeLab(); });
 function pickKind(key) { briefKind = key; renderBrief(); }
+function wbAfterChange(job, kindKey) {
+  if (FARM.jobs[job] === "inv:" + kindKey) { syncInventions(); layoutFarm(farmCounts()); renderSandbox(); onSandboxChange(); }
+  renderBrief();
+}
 function pickPart(job, kindKey, slotKey, optKey) {
   const kind = INVENT[job].find(k => k.key === kindKey);
   wbPicks(job, kind)[slotKey] = optKey;
-  if (FARM.jobs[job] === "inv:" + kindKey) { syncInventions(); layoutFarm(farmCounts()); renderSandbox(); onSandboxChange(); }
-  renderBrief();
+  wbAfterChange(job, kindKey);
+}
+// every combination of parts for a design, scored, so "quick start" can offer the best of each kind
+function wbCombos(job, kind) {
+  let all = [{}];
+  kind.slots.forEach(s => { const next = []; all.forEach(c => s.opts.forEach(o => next.push(Object.assign({}, c, { [s.key]: o.key })))); all = next; });
+  return all.map(picks => ({ picks, b: wbBuild(job, kind, picks) }));
+}
+let briefPresets = [];
+function briefPresetList(job, kind, hrs) {
+  if (!kind.slots.length) return [];
+  const rate = laborRate(), combos = wbCombos(job, kind);
+  combos.forEach(c => { const y = hrs * c.b.cover * rate - c.b.machines * TENDING_HRS_PER_MACHINE_YR * rate - c.b.cost * c.b.up; c.pb = y > 0 ? c.b.cost / y : Infinity; });
+  const pick = (cmp) => combos.slice().sort(cmp)[0];
+  const list = [
+    ["💰", "Cheapest", pick((a, b) => a.b.cost - b.b.cost || b.b.cover - a.b.cover)],
+    ["🌱", "Most ready", pick((a, b) => b.b.trl - a.b.trl || a.b.cost - b.b.cost)],
+    ["🏆", "Most capable", pick((a, b) => b.b.cover - a.b.cover || a.b.cost - b.b.cost)],
+    ["⚖️", "Best payback", pick((a, b) => rsCap(a.pb) - rsCap(b.pb) || a.b.cost - b.b.cost)],
+  ];
+  const groups = [];
+  list.forEach(([ic, lab, c]) => { const key = JSON.stringify(c.picks), g = groups.find(x => x.key === key); if (g) { g.ic += ic; g.lab += " & " + lab.toLowerCase(); } else groups.push({ key, ic, lab, c }); });
+  return groups;
+}
+function applyPreset(i) { const g = briefPresets[i]; if (!g || !briefJob) return; noteAction(`Design: ${g.lab.toLowerCase()}`); Object.assign(wbPicks(briefJob, INVENT[briefJob].find(k => k.key === briefKind)), g.c.picks); wbAfterChange(briefJob, briefKind); }
+function briefCode() {
+  const kind = INVENT[briefJob].find(k => k.key === briefKind), p = wbBuild(briefJob, kind).parts;
+  return ["TW1", briefJob, kind.key, p.map(x => x.slot.key + "=" + x.opt.key).join(",")].join("|");
+}
+function briefCopyCode() {
+  const code = briefCode(), btn = document.getElementById("wbCopy"), done = () => { if (btn) { btn.textContent = "✓ Copied"; setTimeout(() => { if (btn) btn.textContent = "📋 Copy design code"; }, 1500); } };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code).then(done).catch(() => window.prompt("Copy this design code:", code));
+  else window.prompt("Copy this design code:", code);
+}
+function briefPasteCode() {
+  const t = (window.prompt("Paste a design code:") || "").trim();
+  if (!t) return;
+  const [tag, job, kk, rest] = t.split("|"), kind = tag === "TW1" && INVENT[job] ? INVENT[job].find(k => k.key === kk) : null;
+  if (!kind) { window.alert("That doesn't look like a Tillwatt design code."); return; }
+  const picks = {}; (rest || "").split(",").forEach(x => { const [s, o] = x.split("="); picks[s] = o; });
+  const p = wbPicks(job, kind); kind.slots.forEach(s => { if (s.opts.some(o => o.key === picks[s.key])) p[s.key] = picks[s.key]; });
+  briefJob = job; briefKind = kind.key; wbAfterChange(job, kind.key);
 }
 // Most it could cost and still pay for itself within `years` on this farm:
 // price x (1 + years x upkeep) <= years x (hours saved x rate - tending)
 function briefMaxPrice(hrs, a, years, machines) {
   const rate = laborRate(), yearly = hrs * a.cover * rate - (machines == null ? 1 : machines) * TENDING_HRS_PER_MACHINE_YR * rate;
   return yearly > 0 ? years * yearly / (1 + years * a.up) : 0;
+}
+function briefFarmEffect(job, kind) {
+  try {
+    const now = evalPlan(planNow()).pay, plan = planNow(); plan.jobs[job] = "inv:" + kind.key;
+    return { now, withIt: evalPlan(plan).pay };
+  } catch (err) { return null; }
+}
+function briefMeter(label, valueText, frac, cls, tick) {
+  return `<div class="wb-m"><div class="wb-m-h"><span>${label}</span><b>${valueText}</b></div><div class="wb-bar"><i class="${cls || ""}" style="width:${Math.max(2, Math.min(100, frac * 100)).toFixed(0)}%"></i>${tick == null ? "" : `<u style="left:${Math.min(100, tick * 100).toFixed(0)}%"></u>`}</div></div>`;
 }
 function renderBrief() {
   const el = document.getElementById("lab");
@@ -1792,29 +1866,52 @@ function renderBrief() {
   const kinds = INVENT[briefJob] || [], kind = kinds.find(k => k.key === briefKind) || kinds[0];
   const cur = FARM.jobs[briefJob] || "hand", on = cur === "inv:" + kind.key, T = WIN_PAYBACK_YEARS;
   const b = wbBuild(briefJob, kind);
-  const yearly = hrs * b.cover * rate - b.machines * TENDING_HRS_PER_MACHINE_YR * rate - b.cost * b.up;
-  const pb = yearly > 0 ? b.cost / yearly : Infinity, max = briefMaxPrice(hrs, { cover: b.cover, up: b.up }, T, b.machines);
+  if (b.weak && b.weak.opt.trl > 6) b.weak = null; // only flag parts that are still prototypes
+  const max = briefMaxPrice(hrs, { cover: b.cover, up: b.up }, T, b.machines);
+  const hit = max > 0 && b.cost <= max;
+  const fx = briefFarmEffect(briefJob, kind), yr = v => isFinite(v) ? v.toFixed(1) + " yr" : "never";
+  const better = fx && rsCap(fx.withIt) < rsCap(fx.now) - 0.05, worse = fx && rsCap(fx.withIt) > rsCap(fx.now) + 0.05;
+  const scale = Math.max(b.cost, max || b.cost, 1) * 1.15;
+  const meters = briefMeter("Does", pct(b.cover), b.cover, "") +
+    briefMeter("Cost", fmtMoney(b.cost), b.cost / scale, hit ? "ok" : "bad", max > 0 ? max / scale : null) +
+    briefMeter("Ready", b.trl + "/9", b.trl / 9, trlCls(b.trl));
+  const farmLine = fx ? (on || (!better && !worse)
+    ? `🏭 Farm break-even <b>${yr(fx.now)}</b>${on ? " · on your farm" : ""}`
+    : `🏭 Farm break-even <b>${yr(fx.now)}</b> → <b class="${better ? "up" : "down"}">${yr(fx.withIt)}</b> ${better ? "▼ better" : "▲ worse"}`) : "";
   const tiles = B.tiles.map(t => `<div class="wb-tile"><b>${escapeHtml(t[0])}</b><span>${escapeHtml(t[1])}${srcLinks(t[2])}</span></div>`).join("");
   const kindCards = kinds.map(k => { const kb = wbBuild(briefJob, k);
     return `<button type="button" class="wb-kind ${k.key === kind.key ? "sel" : ""} ${cur === "inv:" + k.key ? "on" : ""}" onclick="pickKind('${k.key}')"><i>${k.icon}</i><b>${escapeHtml(k.name)}</b><small>${cur === "inv:" + k.key ? "on your farm · " : ""}${pct(kb.cover)} · ready ${kb.trl}/9</small></button>`; }).join("");
+  briefPresets = briefPresetList(briefJob, kind, hrs);
+  const presets = briefPresets.length ? `<div class="brief-sec">2 · Quick start</div><div class="wb-presets">${briefPresets.map((g, i) => {
+    const sel = wbBuild(briefJob, kind).parts.every(x => g.c.picks[x.slot.key] === x.opt.key);
+    return `<button type="button" class="wb-preset ${sel ? "on" : ""}" onclick="applyPreset(${i})"><i>${g.ic}</i><b>${escapeHtml(g.lab)}</b><small>${pct(g.c.b.cover)} · ${fmtMoney(g.c.b.cost)} · ready ${g.c.b.trl}/9</small></button>`; }).join("")}</div>` : "";
+  const delta = (o, slot) => {
+    const w = wbBuild(briefJob, kind, { [slot.key]: o.key }), dc = w.cost - b.cost, dp = Math.round((w.cover - b.cover) * 100), dt = w.trl - b.trl;
+    const cost = dc === 0 ? "" : `<span class="${dc > 0 ? "dn" : "up"}">${dc > 0 ? "+" : "−"}${fmtMoney(Math.abs(dc))}</span>`;
+    const cov = dp === 0 ? "" : `<span class="${dp > 0 ? "up" : "dn"}">${dp > 0 ? "▲" : "▼"}${Math.abs(dp)} pts</span>`;
+    const rd = dt === 0 ? "" : `<span class="${dt > 0 ? "up" : "dn"}">ready ${dt > 0 ? "+" : "−"}${Math.abs(dt)}</span>`;
+    return [cost, cov, rd].filter(Boolean).join(" ") || `<span class="same">same result</span>`;
+  };
   const slots = b.parts.map(({ slot, opt }) => `<div class="wb-slot"><div class="wb-slot-h"><i>${slot.icon}</i>${escapeHtml(slot.label)}</div>
-      <div class="wb-chips">${slot.opts.map(o => `<button type="button" class="wb-chip ${o === opt ? "on" : ""}" onclick="pickPart('${briefJob}','${kind.key}','${slot.key}','${o.key}')"><i>${o.icon}</i><b>${escapeHtml(o.name)}</b><small>${o.cost ? fmtMoney(o.cost) : "$0"} · <em class="${trlCls(o.trl)}">${o.trl}/9</em></small></button>`).join("")}</div>
+      <div class="wb-chips">${slot.opts.map(o => `<button type="button" class="wb-chip ${o === opt ? "on" : ""}" onclick="pickPart('${briefJob}','${kind.key}','${slot.key}','${o.key}')"><i>${o.icon}</i><b>${escapeHtml(o.name)}</b><small>${o === opt ? `${o.cost ? fmtMoney(o.cost) : "$0"} · <em class="${trlCls(o.trl)}">${o.trl}/9</em>${b.weak && b.weak.opt === o ? ` · ⛓ weakest` : ""}` : delta(o, slot)}</small></button>`).join("")}</div>
       <div class="wb-tip">${escapeHtml(opt.tip || "")}${srcLinks(opt.src)}</div></div>`).join("");
   const parts = kind.slots.length ? slots : `<div class="wb-tip">No parts to choose — it's a proven design.</div>`;
   el.innerHTML = `<div class="lab-inner">
-    <div class="lab-top"><div class="lab-title">${JOB_ICON[briefJob] || "🔧"} Invent <span>${escapeHtml(job.name)}</span></div><button type="button" class="lab-close" onclick="closeLab()">Done</button></div>
+    <div class="wb-dock ${hit ? "hit" : ""}">
+      <div class="lab-top"><div class="lab-title">${JOB_ICON[briefJob] || "🔧"} Invent <span>${escapeHtml(job.name)}</span></div><button type="button" class="lab-close" onclick="closeLab()">Done</button></div>
+      <div class="wb-meters">${meters}</div>
+      <div class="wb-goal">${hit ? `🎯 <b>Beats the price target</b> — under ${fmtMoney(max)} pays back within ${T} yr here.` : max > 0 ? `🎯 Needs to cost under <b>${fmtMoney(max)}</b> to pay back within ${T} yr here.` : "🎯 At this share it can't pay back here at any price."}${b.weak ? ` ⛓ Held back by <b>${escapeHtml(b.weak.opt.name)}</b> (${b.weak.opt.trl}/9).` : ""}</div>
+      <div class="wb-farm"><span>${farmLine}</span><button type="button" class="lab-btn ${on ? "" : "primary"}" onclick="${on ? `setJob('${briefJob}','hand')` : `setJob('${briefJob}','inv:${kind.key}')`}">${on ? "Take it off" : "Build it"}</button></div>
+    </div>
     <div class="wb-strip"><span>⏱ <b>${Math.round(hrs).toLocaleString()}</b> h/yr</span><span>💵 <b>${fmtMoney(hrs * rate)}</b>/yr</span><span>🔓 ${escapeHtml(B.unknown)}</span></div>
-    <div class="wb-tiles">${tiles}</div>
     <div class="brief-sec">1 · Pick a design</div>
     <div class="wb-kinds">${kindCards}</div>
     <p class="wb-what">${escapeHtml(kind.what)}${srcLinks(kind.src)}</p>
-    <div class="brief-sec">2 · Choose its parts</div>
+    ${presets}
+    ${kind.slots.length ? `<div class="brief-sec">3 · Swap parts — each shows what it changes</div>` : ""}
     ${parts}
-    <div class="wb-result">
-      <div class="wb-nums"><span>Does<b>${pct(b.cover)}</b></span><span>Cost<b>${fmtMoney(b.cost)}</b></span><span>Draws<b>${b.kw} kW</b></span><span>Ready<b class="${trlCls(b.trl)}">${b.trl}/9</b></span><span>Pays back<b>${isFinite(pb) ? pb.toFixed(1) + " yr" : "never"}</b></span></div>
-      <div class="wb-line">${b.weak ? `⛓ Weakest part: <b>${escapeHtml(b.weak.opt.name)}</b> (${b.weak.opt.trl}/9 — ${trlWord(b.weak.opt.trl)}). ` : ""}${max > 0 ? `🎯 Under <b>${fmtMoney(max)}</b> it pays back within ${T} yr here.` : "🎯 At this share it can't pay back here at any price."}</div>
-      <button type="button" class="lab-btn ${on ? "" : "primary"}" onclick="${on ? `setJob('${briefJob}','hand')` : `setJob('${briefJob}','inv:${kind.key}')`}">${on ? "Take it off the farm" : "Build it"}</button>
-    </div>
+    <div class="wb-share"><button type="button" class="lab-btn" id="wbCopy" onclick="briefCopyCode()">📋 Copy design code</button><button type="button" class="lab-btn" onclick="briefPasteCode()">📥 Paste a code</button></div>
+    <details class="wb-ev"><summary>📊 The evidence (${B.tiles.length})</summary><div class="wb-tiles">${tiles}</div></details>
     <p class="lab-hint">Ready = NASA's 1–9 scale: 9 sold and proven, 5–6 prototypes tested in fields. Parts without a source are estimates; less-ready parts get wider error bars in the Research tab. Farm payback now: <b id="labFarmPay">${(document.getElementById("hudPay") || {}).textContent || "—"}</b></p>
   </div>`;
 }
